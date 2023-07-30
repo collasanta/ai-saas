@@ -15,11 +15,12 @@ import Link from 'next/link';
 interface FreeCounterProps {
     apiLimitCount: number;
     apiLimit: number;
-    isPro: boolean;
+    hideButton?: boolean;
     dark?: boolean;
+    tight?: boolean;
 }
 
-const FreeCounter = ({ apiLimitCount = 0, apiLimit = 3, isPro = false, dark = false
+const FreeCounter = ({ apiLimitCount = 0, apiLimit = 3, hideButton = false, dark = false, tight = false
 }: FreeCounterProps) => {
     const [mounted, setMounted] = useState(false)
     const proModal = useProModal()
@@ -30,10 +31,10 @@ const FreeCounter = ({ apiLimitCount = 0, apiLimit = 3, isPro = false, dark = fa
     if (!mounted) return null
 
     return (
-        <div className="px-3">
-            <Card className={dark ? "bg-gray border-0" : "bg-white/10 border-0" }>
-                <CardContent className="py-6">
-                    <div className={dark ? "text-center text-sm text-gray-800 mb-4 space-y-2":"text-center text-sm text-white mb-4 space-y-2"}>
+        <div className={tight ? "px-1" : "px-3"}>
+            <Card className={dark ? "bg-gray border-0 shadow-none px-8" : "bg-white/10 border-0" }>
+                <CardContent className={tight ? "py-1" : "py-6"}>
+                    <div className={dark ? "text-center text-sm text-gray-700 mb-4 space-y-2":"text-center text-sm text-white mb-4 space-y-2"}>
                         <p>
                             {apiLimitCount} / {apiLimit} {apiLimit > 3 ? "Credits" : "Free Credits"}
                             <Progress
@@ -43,18 +44,14 @@ const FreeCounter = ({ apiLimitCount = 0, apiLimit = 3, isPro = false, dark = fa
                         </p>
                     </div>
 
-                    {isPro ?
+                    {!hideButton &&
+                    
                     <Link href="https://c9eqb45m7pt.typeform.com/to/RxzJlE9D" rel="noopener noreferrer" target="_blank">
                         <Button variant="premium" className="w-full">
                             Buy More Credits
                             <Zap className="w-4 h-4 ml-2 fill-white" />
                         </Button>
                     </Link> 
-                    :
-                        <Button onClick={proModal.onOpen} variant="premium" className="w-full">
-                            Buy More Credits
-                            <Zap className="w-4 h-4 ml-2 fill-white" />
-                        </Button>
                     }
 
                 </CardContent>

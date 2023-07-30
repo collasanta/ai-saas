@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Montserrat } from "next/font/google";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, MessageSquare, Settings } from "lucide-react";
+import { LayoutDashboard, FolderSearch, Settings } from "lucide-react";
 import {usePathname} from "next/navigation"
 import FreeCounter from "./free-counter";
 
@@ -17,9 +17,9 @@ const routes = [
         color: "text-sky-500"
     },
     {
-        label:"Conversation",
-        icon: MessageSquare,
-        href: "/conversation",
+        label:"Archive",
+        icon: FolderSearch,
+        href: "/archive",
         color: "text-emerald-500"
     },
     {
