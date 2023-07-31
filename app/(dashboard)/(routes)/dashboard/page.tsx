@@ -22,7 +22,7 @@ import { useProModal } from "@/hooks/use-pro-modal";
 import toast from "react-hot-toast";
 import FreeCounter from "@/components/free-counter";
 import { getApiLimit, getApiLimitCount } from "@/lib/api-limit";
-import { IYoutubeVideoInfo, getYoutubeVideoInfos } from "@/lib/youtube";
+import { IYoutubeVideoInfo, getPrompt, getYoutubeVideoInfos } from "@/lib/youtube";
 import Image from "next/image";
 
 const DashboardPage = () => {
@@ -57,7 +57,9 @@ const DashboardPage = () => {
 
     const loadVideoInfos = async (values: z.infer<typeof formSchema>) => {
         try {
-            const infos = await getYoutubeVideoInfos(values.ytlink)
+            // const infos = await getYoutubeVideoInfos(values.ytlink)
+            const infos = await getPrompt(videoInfos!)
+            console.log("chapters", infos)
             setVideoInfos(infos)
             console.log("infos", infos)
         } catch (error: any) {
@@ -69,24 +71,22 @@ const DashboardPage = () => {
         console.log(values)
     }
 
-    // const generateChapters = async () => {
-    //     try {
-    //         getYoutubeVideoChapters()
-    //         const response = await axios.post("/api/chapters/generate", {
-    //             youtubeId: videoInfos?.videoId
-    //         })
-    //         setChapters(chapters)
-    //     } catch (error: any) {
-    //         if (error?.response?.status === 403) {
-    //             proModal.onOpen()
-    //         } else {
-    //             console.log("error: ", error.message)
-    //             toast.error("something went wrong")
-    //         }
-    //     } finally {
-    //         router.refresh()
-    //     }
-    // }
+
+    const generateChapters = async () => {
+        try {
+            const prompt = await getPrompt(videoInfos!)
+            setChapters(chapters)
+        } catch (error: any) {
+            if (error?.response?.status === 403) {
+                proModal.onOpen()
+            } else {
+                console.log("error: ", error.message)
+                toast.error("something went wrong")
+            }
+        } finally {
+            router.refresh()
+        }
+    }
 
     return (
         <div>
