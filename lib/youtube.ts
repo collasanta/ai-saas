@@ -1,6 +1,8 @@
 'use server'
 import * as yt from 'youtube-info-streams';
 import getVideoId from 'get-video-id';
+import { setTimeout } from "timers/promises";
+
 
 export interface IYoutubeVideoInfo {
     languages: string | null;
@@ -13,6 +15,9 @@ export interface IYoutubeVideoInfo {
   }
 
 export const getYoutubeVideoInfos = async (url: string): Promise<IYoutubeVideoInfo>=> {
+    console.log("init getYoutubeVideoInfos")
+    console.time("getYoutubeVideoInfos")
+    await setTimeout(61000);
     const { id } = getVideoId(url);
     if (id === null) {
         throw new Error('Invalid Youtube URL');
@@ -31,5 +36,6 @@ export const getYoutubeVideoInfos = async (url: string): Promise<IYoutubeVideoIn
     let captions = videoInfos.player_response.captions.playerCaptionsTracklistRenderer.captionTracks
     let languages = ""
     let filter = captions.map((caption: any) => { languages = languages + " " + caption.languageCode })
+    console.timeEnd("getYoutubeVideoInfos")
     return { languages, videoLengthMinutes, videoLenghtFormatted, videoTitle, videoChannelName, videoThumb, videoId:id }
 }
