@@ -57,8 +57,7 @@ const DashboardPage = () => {
 
     const loadVideoInfos = async (values: z.infer<typeof formSchema>) => {
         try {
-            // const infos = await getYoutubeVideoInfos(values.ytlink)
-            const infos = await getPrompt(videoInfos!)
+            const infos = await getYoutubeVideoInfos(values.ytlink)
             console.log("chapters", infos)
             setVideoInfos(infos)
             console.log("infos", infos)
@@ -75,7 +74,8 @@ const DashboardPage = () => {
     const generateChapters = async () => {
         try {
             const prompt = await getPrompt(videoInfos!)
-            setChapters(chapters)
+            console.log("tokensCount", prompt)
+            // setChapters(chapters)
         } catch (error: any) {
             if (error?.response?.status === 403) {
                 proModal.onOpen()
@@ -162,7 +162,7 @@ const DashboardPage = () => {
                             <Button
                                 className="w-full"
                                 disabled={isLoading}
-                                onClick={() => console.log("oi")}
+                                onClick={generateChapters}
                             >
                                 Generate
                             </Button>

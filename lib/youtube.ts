@@ -19,7 +19,6 @@ export interface IYoutubeVideoInfo {
 export const getYoutubeVideoInfos = async (url: string): Promise<IYoutubeVideoInfo> => {
     console.log("init getYoutubeVideoInfos")
     console.time("getYoutubeVideoInfos")
-    await setTimeout(61000);
     const { id } = getVideoId(url);
     if (id === null) {
         throw new Error('Invalid Youtube URL');
@@ -51,6 +50,7 @@ export const getPrompt = async (videoInfos: IYoutubeVideoInfo): Promise<any> => 
     
     console.log("tokensCount", tokensCount)
 
+    return tokensCount
 }
 
 async function getFormattedSubtitles(videoId: string) {
@@ -130,10 +130,6 @@ async function countTokens(subs:string) {
       ],
   })
     const InputTokenCount = countWords.usedTokens
-    console.log("tokens prompt", countWords.promptUsedTokens)
-    console.log("tokens completion", countWords.completionUsedTokens)
-    console.log("Tokens total", countWords.usedTokens)
-    console.log("tokens price", countWords.usedUSD)
     // const InputTokenCount = (subs.length/4) + 400 // 500 == equals prompt
     return InputTokenCount
   }
