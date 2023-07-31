@@ -22,10 +22,10 @@ import { useProModal } from "@/hooks/use-pro-modal";
 import toast from "react-hot-toast";
 import FreeCounter from "@/components/free-counter";
 import { getApiLimit, getApiLimitCount } from "@/lib/api-limit";
-import { YoutubeVideoInfo, getYoutubeVideoInfos } from "@/lib/youtube";
+import { IYoutubeVideoInfo, getYoutubeVideoInfos } from "@/lib/youtube";
 import Image from "next/image";
 
-const ArchivePage = () => {
+const DashboardPage = () => {
     const router = useRouter()
     const proModal = useProModal()
     const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([])
@@ -40,7 +40,8 @@ const ArchivePage = () => {
 
     const [apiLimitCount, setApiLimitCount] = useState(0)
     const [apiLimit, setApiLimit] = useState(3)
-    const [videoInfos, setVideoInfos] = useState<YoutubeVideoInfo>()
+    const [videoInfos, setVideoInfos] = useState<IYoutubeVideoInfo>()
+    const [chapters, setChapters] = useState()
 
     useEffect(() => {
         (async () => {
@@ -54,33 +55,38 @@ const ArchivePage = () => {
     }, [])
 
 
-    const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    const loadVideoInfos = async (values: z.infer<typeof formSchema>) => {
         try {
-            // const userMessage: ChatCompletionRequestMessage = {
-            //     role: "user",
-            //     content: values.ytlink,
-            // }
-            // const newMessages = [...messages, userMessage]
-            // const response = await axios.post("/api/conversation", {
-            //     messages: newMessages
-            // })
-            // setMessages((current) => [...current, userMessage, response.data])
-            // form.reset()
             const infos = await getYoutubeVideoInfos(values.ytlink)
             setVideoInfos(infos)
             console.log("infos", infos)
         } catch (error: any) {
-            if (error?.response?.status === 403) {
-                proModal.onOpen()
-            } else {
-                console.log("error: ", error.message)
-                toast.error("something went wrong")
-            }
+            console.log("error: ", error.message)
+            toast.error(`Something went wrong: ${error.message}`)
         } finally {
             router.refresh()
         }
         console.log(values)
     }
+
+    // const generateChapters = async () => {
+    //     try {
+    //         getYoutubeVideoChapters()
+    //         const response = await axios.post("/api/chapters/generate", {
+    //             youtubeId: videoInfos?.videoId
+    //         })
+    //         setChapters(chapters)
+    //     } catch (error: any) {
+    //         if (error?.response?.status === 403) {
+    //             proModal.onOpen()
+    //         } else {
+    //             console.log("error: ", error.message)
+    //             toast.error("something went wrong")
+    //         }
+    //     } finally {
+    //         router.refresh()
+    //     }
+    // }
 
     return (
         <div>
@@ -98,7 +104,7 @@ const ArchivePage = () => {
                 {!videoInfos ?
                     <Form {...form}>
                         <form
-                            onSubmit={form.handleSubmit(onSubmit)}
+                            onSubmit={form.handleSubmit(loadVideoInfos)}
                             className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
                         >
                             <FormField
@@ -130,14 +136,14 @@ const ArchivePage = () => {
                         <div className="col-span-12 lg:col-span-8">
                             <div className="m-0 p-0">
                                 <div
-                                    className="mx-auto border-0 flex flex-col md:flex-row bg-secondary rounded-lg"
+                                    className="mx-auto border-0 flex flex-col md:flex-row bg-[#111827] rounded-lg"
                                 >
-                                    <div className="md:max-w-[250px] my-auto mx-auto px-3 py-5 ">
+                                    <div className="md:max-w-[250px] my-auto mx-auto px-3 py-4 ">
                                         <img src={videoInfos.videoThumb} alt="thumbnail" className="rounded-lg mx-auto" />
                                     </div>
-                                    <div className="flex flex-col justify-center md:justify-start text-center p-4 rounded-lg">
-                                        <p className="text-black/60 font-semibold">{videoInfos.videoTitle}</p>
-                                        <p className="pb-2 text-black/60 text-sm">{videoInfos.videoChannelName}</p>
+                                    <div className="flex flex-col justify-center md:justify-start text-center pb-4 md:pr-6 md:py-4 rounded-lg">
+                                        <p className="text-white font-semibold">{videoInfos.videoTitle}</p>
+                                        <p className="pb-2 text-zinc-400 secondary text-sm">{videoInfos.videoChannelName}</p>
                                         <div className="mx-auto py-1 rounded-lg min-w-[200px]">
                                             <div className="flex flex-row mb-2 bg-white rounded-lg">
                                                 <div className="w-[45%] text-end px-2"><a className="text-black/60 text-sm text-start">Lenght:</a></div>
@@ -145,7 +151,7 @@ const ArchivePage = () => {
                                             </div>
                                             <div className="flex flex-row bg-white rounded-lg">
                                                 <div className="w-[45%] text-end px-2"><a className="text-black/60 text-sm text-start">Cost:</a></div>
-                                                <div className="w-[55%] text-start"><a className="text-md font-semibold text-primary "> {videoInfos.videoLengthMinutes} <a className="text-sm font-semibold">Credits</a></a></div>
+                                                <div className="w-[55%] text-start animate-pulse"><a className="text-md font-semibold text-primary "> {videoInfos.videoLengthMinutes} <a className="text-sm font-semibold">Credits</a></a></div>
                                             </div>
                                         </div>
                                     </div>
@@ -156,6 +162,7 @@ const ArchivePage = () => {
                             <Button
                                 className="w-full"
                                 disabled={isLoading}
+                                onClick={() => console.log("oi")}
                             >
                                 Generate
                             </Button>
@@ -195,4 +202,4 @@ const ArchivePage = () => {
     );
 }
 
-export default ArchivePage;
+export default DashboardPage;

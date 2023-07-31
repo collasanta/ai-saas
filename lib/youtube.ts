@@ -2,16 +2,17 @@
 import * as yt from 'youtube-info-streams';
 import getVideoId from 'get-video-id';
 
-export interface YoutubeVideoInfo {
+export interface IYoutubeVideoInfo {
     languages: string | null;
     videoLengthMinutes: number;
     videoLenghtFormatted: string;
     videoTitle: string;
     videoChannelName: string;
     videoThumb: string;
+    videoId: string;
   }
 
-export const getYoutubeVideoInfos = async (url: string): Promise<YoutubeVideoInfo>=> {
+export const getYoutubeVideoInfos = async (url: string): Promise<IYoutubeVideoInfo>=> {
     const { id } = getVideoId(url);
     if (id === null) {
         throw new Error('Invalid Youtube URL');
@@ -24,12 +25,11 @@ export const getYoutubeVideoInfos = async (url: string): Promise<YoutubeVideoInf
     const videoLengthMinutes = Math.round(videoLenghtSeconds / 60)
     const videoTitle = videoInfos.videoDetails.title
     const videoChannelName = videoInfos.videoDetails.ownerChannelName
-    // console.log("videoInfos.player_response.captions", videoInfos.player_response.captions)
     if (videoInfos.player_response.captions.playerCaptionsTracklistRenderer === undefined){
-        return { languages:null, videoLengthMinutes, videoLenghtFormatted, videoTitle, videoChannelName, videoThumb }
+        throw new Error('Sorry but we cant generate chapters for this video, try another one ;)');
     }
     let captions = videoInfos.player_response.captions.playerCaptionsTracklistRenderer.captionTracks
     let languages = ""
     let filter = captions.map((caption: any) => { languages = languages + " " + caption.languageCode })
-    return { languages, videoLengthMinutes, videoLenghtFormatted, videoTitle, videoChannelName, videoThumb }
+    return { languages, videoLengthMinutes, videoLenghtFormatted, videoTitle, videoChannelName, videoThumb, videoId:id }
 }
