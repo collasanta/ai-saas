@@ -28,6 +28,7 @@
     "crisp-sdk-web": "^1.0.19",
     "eslint": "8.45.0",
     "eslint-config-next": "13.4.12",
+    "get-video-id": "^3.6.5",
     "lucide-react": "^0.263.1",
     "next": "13.4.12",
     "openai": "^3.3.0",
@@ -42,6 +43,7 @@
     "tailwindcss-animate": "^1.0.6",
     "typescript": "5.1.6",
     "typewriter-effect": "^2.20.1",
+    "youtube-info-streams": "^1.0.8",
     "zod": "^3.21.4",
     "zustand": "^4.3.9"
   },

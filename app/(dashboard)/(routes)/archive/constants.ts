@@ -1,7 +1,7 @@
 import * as z from "zod"
 
 export const formSchema = z.object({
-    prompt: z.string().min(1, {
-        message: "Prompt is required"
+    ytlink: z.string().min(1, {
+        message: "video link is required"
     }),
 })

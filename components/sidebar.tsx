@@ -67,7 +67,6 @@ const Sidebar = ({
                 </div>
             </div>
             <FreeCounter 
-                isPro={isPro}
                 apiLimit={apiLimit}
                 apiLimitCount={apiLimitCount}
             />

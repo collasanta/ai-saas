@@ -21,7 +21,7 @@ const SettingsPage = async () => {
             <div className="px-4 lg:px-8 space-x-4">
                 <div className="text-muted-foreground text-sm">
                     <div className="max-w-[330px]">
-                        <FreeCounter apiLimitCount={apiLimitCount} apiLimit={apiLimit} isPro={isPro} dark={true} />
+                        <FreeCounter apiLimitCount={apiLimitCount} apiLimit={apiLimit}  dark={true} />
                     </div>
                     {/* Total Credits */}
                     {/* {
