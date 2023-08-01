@@ -9,7 +9,6 @@ import * as z from "zod";
 import { formSchema } from "../archive/constants"
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import axios from "axios";
 import { useRouter } from "next/navigation";
 import { ChatCompletionRequestMessage } from "openai";
 import { useEffect, useState } from "react";
@@ -23,8 +22,9 @@ import toast from "react-hot-toast";
 import FreeCounter from "@/components/free-counter";
 import { checkUserBalance, getApiLimit, getApiLimitCount, getAvaliableBalance, increaseApiLimit } from "@/lib/api-limit";
 import { IYoutubeVideoInfo, getPrompt, getYoutubeVideoInfos, saveResponseDB } from "@/lib/youtube";
-import Image from "next/image";
 import { MAX_FREE_COUNTS } from "@/constants";
+import { JSONResponse } from "@/app/api/chapters/generate/openai/interfaces";
+import axios from "axios";
 
 const DashboardPage = () => {
     const router = useRouter()
@@ -37,12 +37,11 @@ const DashboardPage = () => {
         }
     })
 
-    const isLoading = form.formState.isSubmitting;
-
     const [apiLimitCount, setApiLimitCount] = useState(0)
     const [apiLimit, setApiLimit] = useState(MAX_FREE_COUNTS)
     const [videoInfos, setVideoInfos] = useState<IYoutubeVideoInfo>()
-    const [chapters, setChapters] = useState()
+    const [chapters, setChapters] = useState<JSONResponse>()
+    const [isLoading, setLoading] = useState(false)
 
     useEffect(() => {
         (async () => {
@@ -54,8 +53,9 @@ const DashboardPage = () => {
             setApiLimit(apiLimit)
         })()
     }, [])
-  
+
     const loadVideoInfos = async (values: z.infer<typeof formSchema>) => {
+        setLoading(true)
         try {
             const infos = await getYoutubeVideoInfos(values.ytlink)
             setVideoInfos(infos)
@@ -66,27 +66,70 @@ const DashboardPage = () => {
         } finally {
             router.refresh()
         }
-        console.log(values)
+        setLoading(false)
     }
 
-
     const generateChapters = async () => {
+
         try {
             const userBalance = await checkUserBalance(videoInfos?.videoLengthMinutes!)
             if (!userBalance) {
                 proModal.onOpen()
                 return
             }
+            setLoading(true)
             const promptInfos = await getPrompt(videoInfos!)
             console.log("promptInfos", promptInfos)
             const chaptersResponse = await axios.post("/api/chapters/generate/openai", promptInfos)
             if (chaptersResponse.status === 200) {
                 await increaseApiLimit(videoInfos?.videoLengthMinutes!)
+                setApiLimitCount(await getApiLimitCount())
             }
-            const JSONResponse = chaptersResponse.data.function_call.arguments
-            setChapters(JSONResponse)
-            console.log("JSONResponse", JSONResponse)
-            await saveResponseDB(promptInfos.tokensCount, promptInfos.aiModel, videoInfos?.generationId!, JSONResponse)
+            const stringfiedJSONResponse = chaptersResponse.data.function_call.arguments
+            await saveResponseDB(promptInfos.tokensCount, promptInfos.aiModel, videoInfos?.generationId!, stringfiedJSONResponse)
+            
+            const jsonResponse = JSON.parse(stringfiedJSONResponse)
+            console.log("jsonResponse", jsonResponse)
+
+            const JSONResponse2 = {
+                "chapters": [
+                    {
+                        "timestamp": "0:00",
+                        "chapter": "Introduction"
+                    },
+                    {
+                        "timestamp": "0:08",
+                        "chapter": "Being a Palestinian Christian"
+                    },
+                    {
+                        "timestamp": "0:37",
+                        "chapter": "Coexistence of Christians and Muslims in Palestine"
+                    },
+                    {
+                        "timestamp": "0:51",
+                        "chapter": "Difficulties due to tension between Israel and Palestine"
+                    },
+                    {
+                        "timestamp": "1:17",
+                        "chapter": "Hope for the future"
+                    }
+                ],
+                "videoReview": "The video transcript features a Palestinian Christian discussing the tension and coexistence between different religions in Palestine. The speaker explains that many people are surprised to see a Palestinian who is a Christian, but Christianity has existed in Palestine since the time of Jesus. The speaker also mentions the difficulties faced due to the tension between Israel and Palestine. However, they express hope for the future, emphasizing the importance of love among the three major religions.",
+                "keywords": [
+                    "Palestinian Christian",
+                    "tension",
+                    "coexistence",
+                    "Israel",
+                    "Palestine",
+                    "hope",
+                    "love",
+                    "religions"
+                ]
+            }
+            console.log("JSONResponse2",JSONResponse2)
+
+            // setChapters(JSONResponse)
+            // console.log({ JSONResponse })
         } catch (error: any) {
             if (error?.response?.status === 403) {
                 proModal.onOpen()
@@ -97,97 +140,142 @@ const DashboardPage = () => {
         } finally {
             router.refresh()
         }
+        setLoading(false)
     }
 
     return (
-        <div>
+        <div className="max-w-[1000px] mx-auto px-3">
             <Heading
-                title="Youtube Chapters"
-                description="Generate chapters for your youtube videos in seconds"
+                title="Chapters Generator"
+                description="Fast chapters for your YouTube videos "
                 icon={Youtube}
-                iconColor="text-emerald-500"
-                bgColor="bg-emerald-500/10"
+                iconColor="text-red-500"
+                bgColor="bg-red-500/10"
             />
             <div>
                 <FreeCounter dark={true} hideButton={true} tight={true} apiLimit={apiLimit} apiLimitCount={apiLimitCount} />
             </div>
-            <div className="px-4 lg:px-8">
-                {!videoInfos ?
-                    <Form {...form}>
-                        <form
-                            onSubmit={form.handleSubmit(loadVideoInfos)}
-                            className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2"
-                        >
-                            <FormField
-                                name="ytlink"
-                                render={({ field }) => (
-                                    <FormItem className="col-span-12 lg:col-span-10">
-                                        <FormControl className="m-0 p-0">
-                                            <Input
-                                                className="pl-2 border-0 bg-secondary outline-none focus-visible:ring-0 focus-visible:ring-transparent"
-                                                disabled={isLoading}
-                                                placeholder="Paste Video Link Here https://www.youtube.com/watch?v=ffJ3x2dBzrlY"
-                                                {...field}
-                                            />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                            <Button
-                                className="col-span-12 lg:col-span-2 w-full"
-                                disabled={isLoading}
-                            >
-                                Generate
-                            </Button>
-                        </form>
-                    </Form>
-                    :
 
-                    <div className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-12 gap-2">
-                        <div className="col-span-12 lg:col-span-8">
-                            <div className="m-0 p-0">
-                                <div
-                                    className="mx-auto border-0 flex flex-col md:flex-row bg-[#111827] rounded-lg "
-                                >
-                                    <div className="md:max-w-[250px] my-auto mx-auto px-3 py-4 ">
-                                        <img src={videoInfos.videoThumb} alt="thumbnail" className="rounded-lg mx-auto" />
-                                    </div>
-                                    <div className="flex flex-col justify-center md:justify-start text-center pb-4 md:pr-6 md:py-4 rounded-lg">
-                                        <p className="text-white font-semibold">{videoInfos.videoTitle}</p>
-                                        <p className="pb-2 text-zinc-400 secondary text-sm">{videoInfos.videoChannelName}</p>
-                                        <div className="mx-auto py-1 rounded-lg min-w-[200px]">
-                                            <div className="flex flex-row mb-2 bg-white rounded-lg">
-                                                <div className="w-[45%] text-end px-2"><a className="text-black/60 text-sm text-start">Lenght:</a></div>
-                                                <div className="w-[55%] text-start"><a className="text-sm text-gray-600 "> {videoInfos.videoLenghtFormatted}</a></div>
+            {isLoading ?
+                <div className="p-8 rounded-lg w-full flex items-center justify-center ">
+                    <Loader gen={videoInfos!!} />
+                </div>
+                :
+                <>
+                    {!videoInfos ?
+                        <>
+                            <div className="">
+                                <Form {...form}>
+                                    <form
+                                        onSubmit={form.handleSubmit(loadVideoInfos)}
+                                        className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-10 gap-2"
+                                    >
+                                        <FormField
+                                            name="ytlink"
+                                            render={({ field }) => (
+                                                <FormItem className="col-span-10 lg:col-span-7">
+                                                    <FormControl className="m-0 p-0">
+                                                        <Input
+                                                            className="pl-2 border-0 bg-secondary outline-none focus-visible:ring-0 focus-visible:ring-transparent"
+                                                            disabled={isLoading}
+                                                            placeholder="Paste Video Link Here https://www.youtube.com/watch?v=ffJ3x2dBzrlY"
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <Button
+                                            className="col-span-10 lg:col-span-3 w-full"
+                                            disabled={isLoading}
+                                        >
+                                            Generate
+                                        </Button>
+                                    </form>
+                                </Form>
+                            </div>
+                        </>
+                        :
+                        !chapters ?
+                            <div className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-10 gap-2">
+                                <div className="col-span-10 lg:col-span-7">
+                                    <div className="m-0 p-0">
+                                        <div
+                                            className="mx-auto border-0 flex flex-col md:flex-row bg-muted rounded-lg "
+                                        >
+                                            <div className="max-w-[280px] my-auto mx-auto px-3 py-4 ">
+                                                <img src={videoInfos.videoThumb} alt="thumbnail" className="rounded-lg mx-auto" />
                                             </div>
-                                            <div className="flex flex-row bg-white rounded-lg">
-                                                <div className="w-[45%] text-end px-2"><a className="text-black/60 text-sm text-start">Cost:</a></div>
-                                                <div className="w-[55%] text-start animate-pulse"><a className="text-md font-semibold text-primary "> {videoInfos.videoLengthMinutes} <a className="text-sm font-semibold">Credits</a></a></div>
+                                            <div className="flex flex-col justify-center md:justify-start text-center pb-4 md:pr-6 md:py-4 rounded-lg">
+                                                <p className="text-black/80 font-semibold">{videoInfos.videoTitle}</p>
+                                                <p className="pb-2 text-zinc-400 secondary text-sm">{videoInfos.videoChannelName}</p>
+                                                <div className="mx-auto py-1 rounded-lg min-w-[200px]">
+                                                    <div className="flex flex-row mb-2 bg-white rounded-lg">
+                                                        <div className="w-[45%] text-end px-2"><a className="text-black/60 text-sm text-start">Lenght:</a></div>
+                                                        <div className="w-[55%] text-start"><a className="text-sm text-gray-600 "> {videoInfos.videoLenghtFormatted}</a></div>
+                                                    </div>
+                                                    <div className="flex flex-row bg-white rounded-lg">
+                                                        <div className="w-[45%] text-end px-2"><a className="text-black/60 text-sm text-start">Cost:</a></div>
+                                                        <div className="w-[55%] text-start animate-pulse"><a className="text-md font-semibold text-primary "> {videoInfos.videoLengthMinutes} <a className="text-sm font-semibold">Credits</a></a></div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+                                <div className="col-span-10 text-center lg:col-span-3 w-full">
+                                    <Button
+                                        className="w-full"
+                                        disabled={isLoading}
+                                        onClick={generateChapters}
+                                    >
+                                        Generate
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
-                        <div className="col-span-12 text-center lg:col-span-4 w-full">
-                            <Button
-                                className="w-full"
-                                disabled={isLoading}
-                                onClick={generateChapters}
-                            >
-                                Generate
-                            </Button>
-                        </div>
-                    </div>
-
-                }
+                            :
+                            <div className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-10 gap-2">
+                                <div className="col-span-10 lg:col-span-7">
+                                    <div className="m-0 p-0">
+                                        <div
+                                            className="mx-auto border-0 flex flex-col md:flex-row bg-muted rounded-lg "
+                                        >
+                                            <div className="max-w-[280px] my-auto mx-auto px-3 py-4 ">
+                                                <img src={videoInfos.videoThumb} alt="thumbnail" className="rounded-lg mx-auto" />
+                                            </div>
+                                            <div className="flex flex-col justify-center md:justify-start text-center pb-4 md:pr-6 md:py-4 rounded-lg">
+                                                <p className="text-black/80 font-semibold">{videoInfos.videoTitle}</p>
+                                                <p className="pb-2 text-zinc-400 secondary text-sm">{videoInfos.videoChannelName}</p>
+                                                <div className="mx-auto py-1 rounded-lg min-w-[200px]">
+                                                    <div className="flex flex-row mb-2 bg-white rounded-lg">
+                                                        <div className="w-[45%] text-end px-2"><a className="text-black/60 text-sm text-start">Lenght:</a></div>
+                                                        <div className="w-[55%] text-start"><a className="text-sm text-gray-600 "> {videoInfos.videoLenghtFormatted}</a></div>
+                                                    </div>
+                                                    <div className="flex flex-row bg-white rounded-lg">
+                                                        <div className="w-[45%] text-end px-2"><a className="text-black/60 text-sm text-start">Cost:</a></div>
+                                                        <div className="w-[55%] text-start animate-pulse"><a className="text-md font-semibold text-primary "> {videoInfos.videoLengthMinutes} <a className="text-sm font-semibold">Credits</a></a></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="col-span-10 text-center lg:col-span-3 w-full">
+                                    <Button
+                                        className="w-full"
+                                        disabled={isLoading}
+                                        onClick={generateChapters}
+                                    >
+                                        Restart
+                                    </Button>
+                                </div>
+                            </div>
+                    }
+                </>
+            }
+            <div className="px-4 lg:px-8">
 
                 <div className="space-y-4 mt-4">
-                    {isLoading && (
-                        <div className="p-8 rounded-lg w-full flex items-center justify-center bg-muted">
-                            <Loader />
-                        </div>
-                    )}
                     {messages.length === 0 && !isLoading && (
                         <Empty label="No conversations started." />
                     )}

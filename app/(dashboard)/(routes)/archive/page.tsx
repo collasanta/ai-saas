@@ -1,9 +1,13 @@
 "use client"
 
+import { ChapterCard } from "@/components/chapterCard"
+// import { ChapterCard } from "@/components/chapterCard"
 import { Card } from "@/components/ui/card"
+import { IChapterList, IUserChapters, getUserChapters } from "@/lib/archives"
 import { cn } from "@/lib/utils"
 import { FileVideo, ArrowDown } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
 const tools = [
   {
@@ -31,6 +35,20 @@ const tools = [
 
 export default function Home() {
   const router = useRouter()
+  const [chapters, setChapters] = useState<any>([]);
+
+  useEffect(() => {
+    (async function () {
+      try {
+        const chaptersData:any = await getUserChapters();
+        console.log("chaptersData", chaptersData);
+        setChapters(chaptersData);
+      } catch (error) {
+        // Handle the error appropriately
+        console.error('Error fetching chapters data:', error);
+      }
+    })();
+  }, []);
   return (
       <div>
         <div className="mb-8 space-y-4">
@@ -42,21 +60,12 @@ export default function Home() {
           </p>
         </div>
         <div className="px-4 md:px-20 lg:px-32 space-y-4">
-          {tools.map((tool) => (
-            <Card
-            onClick={()=>{router.push(tool.href)}}
-              key={tool.href}
-              className="p-4 border-black/5 flex items-center justify-between hover:shadow-md transition cursor-pointer">
-            <div className="flex items-center gap-x-4">
-              <div className={cn("p-2 w-fit rounded-md", tool.bgColor)}>
-                <tool.icon className={cn("w-8 h-8", tool.color)} />
-              </div>
-              <div className="font-semibold">
-                {tool.label}
-              </div>
-            </div>
-            <ArrowDown className="w-5 h-5"/>
-            </Card>
+          {/* <ChapterCard genId="asdasds" /> */}
+          {chapters.map((chapter:IChapterList) => (
+            <ChapterCard 
+            key={chapter.videoInfos.generationId}
+            chapter={chapter}
+            />
           ))}
         </div>
       </div>

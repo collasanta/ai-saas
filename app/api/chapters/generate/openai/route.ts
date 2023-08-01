@@ -14,12 +14,12 @@ export async function POST(req: Request) {
   const promptInfos: IPromptInfos = await req.json()
   
   
-  const prompt = `Analyze and interpret this video transcript: ${promptInfos.formattedSubtitles}`
+  const prompt = `Analyze and interpret this video: ${promptInfos.formattedSubtitles}`
 
   let Functions = [
     {
       "name": "video_interpreter",
-      "description": "This functions takes a video transcript and creates a list of chapters, a video review, and a list of keywords based on the transcript.",
+      "description": "This functions takes a video and creates a list of chapters, a video review, and a list of keywords based on the video.",
       "parameters": {
         // SCHEMA:
         "type": "object",
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
           },
           "videoReview": {
             "type": "string",
-            "description": "A review of the content of the video (do not cite the word 'transcript')"
+            "description": "A review of the content of the video"
           },
           "keywords": {
             "type": "array",

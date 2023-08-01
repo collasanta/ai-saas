@@ -31,7 +31,7 @@ const FreeCounter = ({ apiLimitCount = 0, apiLimit = 3, hideButton = false, dark
     if (!mounted) return null
 
     return (
-        <div className={tight ? "px-1" : "px-3"}>
+        <div className={tight ? "px-1 max-w-[1000px] mx-auto" : "px-3  "}>
             <Card className={dark ? "bg-gray border-0 shadow-none px-8" : "bg-white/10 border-0" }>
                 <CardContent className={tight ? "py-1" : "py-6"}>
                     <div className={dark ? "text-center text-sm text-gray-600 mb-4 space-y-2":"text-center text-sm text-white mb-4 space-y-2"}>
@@ -48,7 +48,7 @@ const FreeCounter = ({ apiLimitCount = 0, apiLimit = 3, hideButton = false, dark
                     
                     <Link href="https://c9eqb45m7pt.typeform.com/to/RxzJlE9D" rel="noopener noreferrer" target="_blank">
                         <Button variant="premium" className="w-full">
-                            Buy More Credits
+                            Buy Credits
                             <Zap className="w-4 h-4 ml-2 fill-white" />
                         </Button>
                     </Link> 

@@ -112,7 +112,7 @@ export const getPrompt = async (videoInfos: IYoutubeVideoInfo): Promise<IPromptI
     return promptInfos
 }
 
-export const saveResponseDB = async (tokensCount: number, aiModel: string, generationId: string, jsonResponse: any) => {
+export const saveResponseDB = async (tokensCount: number, aiModel: string, generationId: string, stringfiedJsonResponse: any) => {
     console.time("saveResponseDB")
     console.log("saveResponseDB")
     const { userId } = auth()
@@ -127,10 +127,11 @@ export const saveResponseDB = async (tokensCount: number, aiModel: string, gener
         }
     });
 
+    console.log("typeof JSONRESPONSE", typeof stringfiedJsonResponse)
+    // const textJsonResponse = JSON.stringify(stringfiedJsonResponse)
+    // console.log("typeof textJsonResponse", typeof textJsonResponse)
 
-
-    const textGptResponse = JSON.stringify(jsonResponse)
-    const completionTokens = await countTokens(textGptResponse, "output")
+    const completionTokens = await countTokens(stringfiedJsonResponse, "output")
     const totalTokens = selectedLine?.promptTokens! + completionTokens!;
     const USDCost = await calculateCost(totalTokens, aiModel)
 
@@ -143,7 +144,7 @@ export const saveResponseDB = async (tokensCount: number, aiModel: string, gener
             completionTokens: completionTokens,
             totalTokens: totalTokens,
             USDCost,
-            gptResponse: textGptResponse
+            gptResponse: stringfiedJsonResponse
         }
     });
     console.timeEnd("saveResponseDB")

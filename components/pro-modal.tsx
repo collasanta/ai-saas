@@ -75,7 +75,7 @@ export const ProModal = () => {
                         {benefits.map((benefit) => (
                             <Card
                                 key={benefit.label}
-                                className="p-3 border-black/5 flex items-center justify-between"
+                                className="p-3 border-black/5 flex items-center justify-between"                                
                             >
                                 <div className="flex items-center gap-x-4">
                                     <div className={cn("p-2 w-fit rounded-md", benefit.bgColor)}>
@@ -92,7 +92,7 @@ export const ProModal = () => {
                 </DialogHeader>
                 <DialogFooter >
                     <Button  onClick={onSubscribe} disabled={loading} variant="premium" size="lg" className="w-full"> 
-                    Buy More Credits
+                    Buy Credits
                         <Zap className="w-4 h-4 ml-2 fill-white" />
                     </Button>
                 </DialogFooter>
