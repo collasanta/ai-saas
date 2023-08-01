@@ -1,1 +1,3 @@
-export const MAX_FREE_COUNTS = 3
+export const MAX_FREE_COUNTS = 50
+export const OPENAI_GPT35_4K_USD_PER_TOKEN = 0.0000015
+export const OPENAI_GPT35_16K_USD_PER_TOKEN = 0.0000030

@@ -3,7 +3,7 @@
 import { useProModal } from "@/hooks/use-pro-modal"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog"
 import { Badge } from "./ui/badge"
-import { Check, MessageSquare, Zap, Timer } from "lucide-react"
+import { Check, Zap, Youtube, Coins, CircleDollarSign, HeartHandshake } from "lucide-react"
 import { Card } from "./ui/card"
 import { cn } from "@/lib/utils"
 import { Button } from "./ui/button"
@@ -12,16 +12,28 @@ import { useState } from "react"
 
 const benefits = [
     {
-        label: "Add 50 Credits",
-        icon: MessageSquare,
-        color: "text-emerald-500",
-        bgColor: "bg-emerald-500/10",
+        label: "Support the Project ",
+        icon: HeartHandshake,
+        color: "text-cyan-500",
+        bgColor: "bg-cyan-500/10",
     },
     {
-        label: "Long Videos Support",
-        icon: Timer,
+        label: "Add 1000 Credits for $10",
+        icon: CircleDollarSign,
         color: "text-green-500",
         bgColor: "bg-green-500/10",
+    },
+    {
+        label: "Equivalent to 1000 Minutes",
+        icon: Youtube,
+        color: "text-red-500",
+        bgColor: "bg-red-500/10",
+    },
+    {
+        label: "1 Penny per Minute",
+        icon: Coins,
+        color: "text-yellow-500",
+        bgColor: "bg-yellow-500/10",
     },
     // {
     //     label: "100 Generations",

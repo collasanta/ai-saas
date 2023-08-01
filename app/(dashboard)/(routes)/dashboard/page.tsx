@@ -21,9 +21,10 @@ import { BotAvatar } from "@/components/bot-avatar";
 import { useProModal } from "@/hooks/use-pro-modal";
 import toast from "react-hot-toast";
 import FreeCounter from "@/components/free-counter";
-import { getApiLimit, getApiLimitCount } from "@/lib/api-limit";
-import { IYoutubeVideoInfo, getPrompt, getYoutubeVideoInfos } from "@/lib/youtube";
+import { checkUserBalance, getApiLimit, getApiLimitCount, getAvaliableBalance, increaseApiLimit } from "@/lib/api-limit";
+import { IYoutubeVideoInfo, getPrompt, getYoutubeVideoInfos, saveResponseDB } from "@/lib/youtube";
 import Image from "next/image";
+import { MAX_FREE_COUNTS } from "@/constants";
 
 const DashboardPage = () => {
     const router = useRouter()
@@ -39,7 +40,7 @@ const DashboardPage = () => {
     const isLoading = form.formState.isSubmitting;
 
     const [apiLimitCount, setApiLimitCount] = useState(0)
-    const [apiLimit, setApiLimit] = useState(3)
+    const [apiLimit, setApiLimit] = useState(MAX_FREE_COUNTS)
     const [videoInfos, setVideoInfos] = useState<IYoutubeVideoInfo>()
     const [chapters, setChapters] = useState()
 
@@ -58,9 +59,8 @@ const DashboardPage = () => {
     const loadVideoInfos = async (values: z.infer<typeof formSchema>) => {
         try {
             const infos = await getYoutubeVideoInfos(values.ytlink)
-            console.log("chapters", infos)
             setVideoInfos(infos)
-            console.log("infos", infos)
+            console.log("VideoInfos", infos)
         } catch (error: any) {
             console.log("error: ", error.message)
             toast.error(`Something went wrong: ${error.message}`)
@@ -73,9 +73,23 @@ const DashboardPage = () => {
 
     const generateChapters = async () => {
         try {
-            const prompt = await getPrompt(videoInfos!)
-            console.log("tokensCount", prompt)
-            // setChapters(chapters)
+            const userBalance = await checkUserBalance(videoInfos?.videoLengthMinutes!)
+            if (!userBalance) {
+                proModal.onOpen()
+                return
+            }
+            const promptInfos = await getPrompt(videoInfos!)
+            console.log("promptInfos", promptInfos)
+            const chaptersResponse = await axios.post("/api/chapters/generate/openai", promptInfos)
+            if (chaptersResponse.status === 200) {
+                increaseApiLimit(videoInfos?.videoLengthMinutes!)
+            }
+            console.log("chaptersResponse", chaptersResponse)
+            const JSONResponse = chaptersResponse.data.function_call.arguments
+            console.log("JSONResponse", JSONResponse)
+            await saveResponseDB(promptInfos.tokensCount, promptInfos.aiModel, videoInfos?.generationId!, JSONResponse)
+            
+
         } catch (error: any) {
             if (error?.response?.status === 403) {
                 proModal.onOpen()
@@ -136,7 +150,7 @@ const DashboardPage = () => {
                         <div className="col-span-12 lg:col-span-8">
                             <div className="m-0 p-0">
                                 <div
-                                    className="mx-auto border-0 flex flex-col md:flex-row bg-[#111827] rounded-lg"
+                                    className="mx-auto border-0 flex flex-col md:flex-row bg-[#111827] rounded-lg "
                                 >
                                     <div className="md:max-w-[250px] my-auto mx-auto px-3 py-4 ">
                                         <img src={videoInfos.videoThumb} alt="thumbnail" className="rounded-lg mx-auto" />

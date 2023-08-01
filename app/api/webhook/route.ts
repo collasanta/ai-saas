@@ -103,7 +103,7 @@ export async function POST(req: Request) {
             },
             data: {
                 credits: {
-                    increment: 50
+                    increment: 1000
                 }
             }
         })

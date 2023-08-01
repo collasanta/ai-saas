@@ -42,7 +42,7 @@ export async function GET() {
                         currency: "USD",
                         product_data: {
                             name: "Pro Package",
-                            description:"Add 50 credits + Long videos support (ONE TIME PAYMENT)",
+                            description:"Add 1000 credits + Long videos support (ONE TIME PAYMENT)",
                         },
                         unit_amount: 1000,
                     },

@@ -1,10 +1,14 @@
 'use server'
 import * as yt from 'youtube-info-streams';
 import getVideoId from 'get-video-id';
-import { setTimeout } from "timers/promises";
+import { uid } from 'uid';
 var getSubtitles = require('youtube-captions-scraper').getSubtitles;
-import { GPTTokens } from "gpt-tokens";
+import prismadb from './prismadb';
+import { auth } from "@clerk/nextjs"
+import { promptTokensEstimate } from "openai-chat-tokens";
+import { OPENAI_GPT35_16K_USD_PER_TOKEN, OPENAI_GPT35_4K_USD_PER_TOKEN } from '@/constants';
 
+//INTERFACES  ///////////////////////////////////////////////////////////////////////////////////////////////////
 export interface IYoutubeVideoInfo {
     languages: string | null;
     videoLenghtSeconds: number;
@@ -14,11 +18,25 @@ export interface IYoutubeVideoInfo {
     videoChannelName: string;
     videoThumb: string;
     videoId: string;
+    generationId: string;
 }
 
+export interface IPromptInfos {
+    tokensCount: number;
+    credits: number;
+    listItemsCount: number;
+    aiModel: string;
+    formattedSubtitles: string
+}
+
+// SERVER ACTIONS ///////////////////////////////////////////////////////////////////////////////////////////////////
 export const getYoutubeVideoInfos = async (url: string): Promise<IYoutubeVideoInfo> => {
-    console.log("init getYoutubeVideoInfos")
+    console.log("getYoutubeVideoInfos")
     console.time("getYoutubeVideoInfos")
+    const { userId } = auth()
+    if (!userId) {
+        throw new Error('Please login to use the app');
+    }
     const { id } = getVideoId(url);
     if (id === null) {
         throw new Error('Invalid Youtube URL');
@@ -36,29 +54,114 @@ export const getYoutubeVideoInfos = async (url: string): Promise<IYoutubeVideoIn
     }
     let captions = videoInfos.player_response.captions.playerCaptionsTracklistRenderer.captionTracks
     let languages = ""
-    let filter = captions.map((caption: any) => { languages = languages + " " + caption.languageCode })
-    console.timeEnd("getYoutubeVideoInfos")
-    return { languages, videoLenghtSeconds, videoLengthMinutes, videoLenghtFormatted, videoTitle, videoChannelName, videoThumb, videoId: id }
-}
+    let filter = captions.map((caption: any) => { languages = languages + caption.languageCode + " " })
 
-export const getPrompt = async (videoInfos: IYoutubeVideoInfo): Promise<any> => {
-    const formattedSubtitles = await getFormattedSubtitles(videoInfos.videoId)
-
-    const itensCount: any = await getListCount(`${videoInfos.videoLenghtSeconds}`)
-
-    const tokensCount = await countTokens(formattedSubtitles)
     
-    console.log("tokensCount", tokensCount)
-
-    return tokensCount
+    const archiveID = uid()
+    const VideoInfos = { languages, videoLenghtSeconds, videoLengthMinutes, videoLenghtFormatted, videoTitle, videoChannelName, videoThumb, videoId: id, generationId: archiveID }
+    
+    await prismadb.archives.create({
+        data: {
+            generationId: archiveID,
+            userId: userId,
+            videoInfos: JSON.stringify(VideoInfos),
+        }
+    })
+    
+    console.timeEnd("getYoutubeVideoInfos")
+    return VideoInfos
 }
 
-async function getFormattedSubtitles(videoId: string) {
-    let subs = await getSubtitles({
-        videoID: videoId, // youtube video id
-        // lang: selectedSub // default: `en`
+export const getPrompt = async (videoInfos: IYoutubeVideoInfo): Promise<IPromptInfos> => {
+    console.log("getPrompt")
+    console.time("getPrompt")
+    const formattedSubtitles = await getFormattedSubtitles(videoInfos.videoId, videoInfos.languages!)
+
+
+    const tokensCount = await countTokens(formattedSubtitles, "input")
+
+    const listItemsCount: any = await getListCount(`${videoInfos.videoLenghtSeconds}`)
+    const aiModel = await getAiModel(tokensCount!)
+
+    const { userId } = auth()
+
+    if (!userId) {
+        throw new Error('Please login to generate chapters');
+    }
+
+    await prismadb.archives.update({
+        where: {
+            generationId: videoInfos.generationId
+        },
+        data: {
+            subtitles: formattedSubtitles,
+            credits: videoInfos.videoLengthMinutes,
+            model: aiModel,
+            promptTokens: tokensCount,
+        }
     })
 
+    const promptInfos = {
+        tokensCount: tokensCount!,
+        listItemsCount: listItemsCount!,
+        aiModel: aiModel!,
+        formattedSubtitles: formattedSubtitles!,
+        credits: videoInfos.videoLengthMinutes!
+    }
+    console.timeEnd("getPrompt")
+    return promptInfos
+}
+
+export const saveResponseDB = async (tokensCount: number, aiModel: string, generationId: string, jsonResponse: any) => {
+    console.time("saveResponseDB")
+    console.log("saveResponseDB")
+    const { userId } = auth()
+    if (!userId) {
+        throw new Error('Please login to generate chapters');
+    }
+
+    const selectedLine = await prismadb.archives.findUnique({
+        where: {
+            generationId: generationId,
+            userId: userId
+        }
+    });
+
+
+
+    const textGptResponse = JSON.stringify(jsonResponse)
+    const completionTokens = await countTokens(textGptResponse, "output")
+    const totalTokens = selectedLine?.promptTokens! + completionTokens!;
+    const USDCost = await calculateCost(totalTokens, aiModel)
+
+    await prismadb.archives.update({
+        where: {
+            generationId: generationId,
+            userId: userId
+        },
+        data: {
+            completionTokens: completionTokens,
+            totalTokens: totalTokens,
+            USDCost,
+            gptResponse: textGptResponse
+        }
+    });
+    console.timeEnd("saveResponseDB")
+}
+
+// AUXILIAR FUNCTIONS  ///////////////////////////////////////////////////////////////////////////////////////////////////
+async function getFormattedSubtitles(videoId: string, videoLanguages: string) {
+    let languagesArr = videoLanguages.split(" ")
+    const languagesArrFiltered = languagesArr.filter((str) => str !== '');
+    let selectedSub = languagesArr.find(a => a.includes("en"));
+    if (!selectedSub) {
+        selectedSub = languagesArr[0]
+    }
+
+    let subs = await getSubtitles({
+        videoID: videoId, // youtube video id
+        lang: selectedSub // default: `en`
+    })
 
     let finalTimmedSubsArr = await Promise.all(subs.map(async (sub: any) => {
         // TESTE FUTURO
@@ -83,53 +186,104 @@ async function getFormattedSubtitles(videoId: string) {
 
 async function getListCount(totalSeconds: string) {
     if (+totalSeconds < 180) { //menor que 3 minutos
-      return 3
+        return 3
     } else if (+totalSeconds >= 180 && +totalSeconds < 300) { //entre 3minutos e 5 minutos
-      return 4
+        return 4
     } else if (+totalSeconds >= 300 && +totalSeconds < 360) { //entre 5minutos e 6 minutos
-      return 5
+        return 5
     } else if (+totalSeconds >= 360 && +totalSeconds < 420) { //entre 6 minutos e 7 minutos
-      return 6
+        return 6
     } else if (+totalSeconds >= 420 && +totalSeconds < 480) { //entre 7 minutos e 8 minutos
-      return 7
+        return 7
     } else if (+totalSeconds >= 480 && +totalSeconds < 540) { //entre 8 minutos e 9 minutos
-      return 8
+        return 8
     } else if (+totalSeconds >= 540 && +totalSeconds < 600) { //entre 8 minutos e 9 minutos
-      return 9
+        return 9
     } else if (+totalSeconds >= 600) { //entre 9 minutos e 11 minutos
-      return 10
+        return 10
     }
 }
 
-async function countTokens(subs:string) {
-    subs.concat()
-    const countWords = new GPTTokens({
-      model: 'gpt-3.5-turbo-16k-0613',
-      messages: [
-        // {"role": "system", "content": "Você é um jornalista. Responda de forma concisa e usando uma linguagem de fácil entedimento"},
-        {"role": "user", "content": `use essa transcrição de vídeo e faça uma lista de carimbo de data/hora de no máximo ${10} items, com os principais tópicos abordados.
-        Cada tópico deve ter no mínomo 15 caracteres e no máximo 100 caracteres.
-        A resposta deve estar no formato
-        Pontos Chave:
-        -tempo tópico 1 
-        -tempo tópico 2
-        (linha de espaço)
-        Após isso, resuma o vídeo em um parágrafo e adicione ao final da resposta no seguinte formato:
-        Resumo do vídeo:
-        -Exemplo de resumo. 
-        (linha de espaço)
-        Após isso, crie palavras chave otimizdas para SEO e adicione-as ao final da resposta no seguinte formato:
-        Palavras Chave:
-        palavra1, ... palavra10,
-        vídeo:${subs}.
-        `}
-        // {"role": "user", "content": `use essa transcrição de vídeo e faça uma lista de carimbo de data/hora de no máximo 10 itens, com os principais tópicos abordados.
-        // Cada item da lista deve conter o carimbo de data/hora e o tópico abordado.
-        // vídeo:${subs}.
-        // `}
-      ],
-  })
-    const InputTokenCount = countWords.usedTokens
-    // const InputTokenCount = (subs.length/4) + 400 // 500 == equals prompt
-    return InputTokenCount
-  }
+async function countTokens(text: string, type: "input" | "output") {
+    if (type === "input") {
+        text.concat()
+        let Functions = [
+            {
+                "name": "video_interpreter",
+                "description": "This functions takes a video transcript and creates a list of chapters, a video review, and a list of keywords based on the transcript.",
+                "parameters": {
+                    // SCHEMA:
+                    "type": "object",
+                    "properties": {
+                        "chapters": {
+                            "type": "array",
+                            "description": `An array of objects decribing the most relevant parts of the video, the array max lenght must be ${10}.`,
+                            "items": {
+                                "type": "object",
+                                "description": "object with timestamp and a descriptive chapter",
+                                "properties": {
+                                    "timestamp": {
+                                        "type": "string",
+                                        "description": "timestamp in the format of minutes:seconds",
+                                    },
+                                    "chapter": {
+                                        "type": "string",
+                                        "description": "A descriptive chapter name",
+                                    }
+                                }
+                            },
+                        },
+                        "videoReview": {
+                            "type": "string",
+                            "description": "A review of the content of the video (do not cite the word 'transcript')"
+                        },
+                        "keywords": {
+                            "type": "array",
+                            "description": "A list of SEO keywords that describe the content of the video to better rank at Youtube",
+                            "items": { "type": "string" }
+                        }
+                    },
+                    "required": ["chapters", "videoReview", "keywords"]
+                }
+            }
+        ]
+        const prompt = `Analyze and interpret this video transcript: ${text}`
+        const InputTokenCount = promptTokensEstimate({
+            messages: [
+                { role: "system", "content": "You are a helpful reader and interpreter" },
+                { role: "user", content: prompt }],
+            functions: Functions,
+        })
+        return InputTokenCount
+    }
+
+    if (type === "output") {
+        const outputTokenCount = promptTokensEstimate({
+            messages: [
+                { role: "system", "content": text },
+            ],
+        })
+        return outputTokenCount
+    }
+}
+
+async function getAiModel(tokensCount: number) {
+    if (tokensCount < 3500) {
+        return "gpt-3.5-turbo-0613"
+    } else if (tokensCount >= 3500 && tokensCount < 15000) {
+        return "gpt-3.5-turbo-16k-0613"
+    } else if (tokensCount >= 15000 && tokensCount < 99000) {
+        throw new Error('Sorry but we cant generate chapters for this video yet, longer videos support are coming soon ;)');
+        return "claudev2"
+    }
+}
+
+async function calculateCost(tokensCount: number, aiModel: string) {
+    if (aiModel === "gpt-3.5-turbo-0613") {
+        return OPENAI_GPT35_4K_USD_PER_TOKEN * tokensCount
+    } else if (aiModel === "gpt-3.5-turbo-16k-0613") {
+        return OPENAI_GPT35_16K_USD_PER_TOKEN * tokensCount
+    } else {
+        throw new Error('calculateCostmodelNotFound: 16k tokens + not supported yet');
+    }
+}

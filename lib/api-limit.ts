@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs"
 import prismadb from "@/lib/prismadb"
 import { MAX_FREE_COUNTS } from "@/constants"
 
-export const increaseApiLimit = async () => {
+export const increaseApiLimit = async (amount:number) => {
     const { userId } = auth()
 
     if (!userId) {
@@ -19,13 +19,14 @@ export const increaseApiLimit = async () => {
     if (userApiLimit) {
         await prismadb.userApiLimit.update({
             where: { userId },
-            data: { count: userApiLimit.count + 1 }
+            data: { count: userApiLimit.count + amount }
         })
+        console.log(`apiLimit Increase: ${amount} for user: ${userId}`)
     } else {
         await prismadb.userApiLimit.create({
             data: {
                 userId,
-                count: 1
+                count: amount
             }
         })
     }
@@ -80,9 +81,6 @@ export const getApiLimit = async () => {
         }
     }).then((res) => res._sum.credits)
 
-    const userApiLimit = await prismadb.userApiLimit.findUnique({
-        where: { userId }
-    })
 
     const maxUsage = MAX_FREE_COUNTS + (credits ? credits : 0)
 
@@ -106,4 +104,35 @@ export const getApiLimitCount = async () => {
     }
 
     return userApiLimit.count
+}
+
+export const getAvaliableBalance = async () => {
+    const { userId } = auth()
+
+    if (!userId) {
+        return 0
+    }
+
+    const userUsage = await getApiLimitCount()
+    const userCredits = await getApiLimit()
+
+    const userBalance =  userCredits - userUsage
+    
+    return userBalance
+}
+
+export const checkUserBalance = async (price:number) => {
+    const { userId } = auth()
+
+    if (!userId) {
+        return false
+    }
+
+    const userBalance = await getAvaliableBalance()
+
+    if (userBalance >= price) {
+        return true
+    } else {
+        return false
+    }
 }
