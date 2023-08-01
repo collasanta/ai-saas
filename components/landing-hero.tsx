@@ -3,11 +3,18 @@
 import TypewriterComponent from "typewriter-effect";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
-
+import {useRouter} from "next/navigation"
 import { Button } from "@/components/ui/button";
 
 export const LandingHero = () => {
   const { isSignedIn } = useAuth();
+  const router = useRouter();
+
+  console.log("isSignedIn", isSignedIn)
+  if (isSignedIn) {
+    router.push("/dashboard");
+  }
+
 
   return (
     <div className="text-white font-bold py-36 text-center space-y-5">

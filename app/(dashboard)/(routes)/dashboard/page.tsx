@@ -54,8 +54,7 @@ const DashboardPage = () => {
             setApiLimit(apiLimit)
         })()
     }, [])
-
-
+  
     const loadVideoInfos = async (values: z.infer<typeof formSchema>) => {
         try {
             const infos = await getYoutubeVideoInfos(values.ytlink)
@@ -82,14 +81,12 @@ const DashboardPage = () => {
             console.log("promptInfos", promptInfos)
             const chaptersResponse = await axios.post("/api/chapters/generate/openai", promptInfos)
             if (chaptersResponse.status === 200) {
-                increaseApiLimit(videoInfos?.videoLengthMinutes!)
+                await increaseApiLimit(videoInfos?.videoLengthMinutes!)
             }
-            console.log("chaptersResponse", chaptersResponse)
             const JSONResponse = chaptersResponse.data.function_call.arguments
+            setChapters(JSONResponse)
             console.log("JSONResponse", JSONResponse)
             await saveResponseDB(promptInfos.tokensCount, promptInfos.aiModel, videoInfos?.generationId!, JSONResponse)
-            
-
         } catch (error: any) {
             if (error?.response?.status === 403) {
                 proModal.onOpen()
