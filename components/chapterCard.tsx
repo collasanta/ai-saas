@@ -41,7 +41,7 @@ export const ChapterCard = (
     }
 
     return (
-        <div className="flex flex-col border max-w-[750px] bg-secondary border-black/5 text-card-foreground shadow-sm rounded-lg text-[13px]  py-4 px-4 hover:shadow-lg transition cursor-pointer">
+        <div className="flex flex-col border max-w-[750px] bg-secondary border-black/5 text-card-foreground shadow-sm rounded-lg text-[13px]  py-2 px-1 hover:shadow-lg transition cursor-pointer">
             <div onClick={handleClick} className="    flex items-center justify-between ">
                 <div className="flex items-center gap-x-2 truncate">
                     <div className="w-fit bg-emerald-500/10 rounded-full">

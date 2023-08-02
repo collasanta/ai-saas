@@ -24,7 +24,7 @@ const benefits = [
         bgColor: "bg-green-500/10",
     },
     {
-        label: "Equivalent to 1000 Minutes",
+        label: "Up to 1000 Minutes of video",
         icon: Youtube,
         color: "text-red-500",
         bgColor: "bg-red-500/10",

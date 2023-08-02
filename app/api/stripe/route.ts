@@ -44,7 +44,7 @@ export async function GET() {
                             name: "ChadChapters Pro Package",
                             description:"Add 1000 credits (ONE TIME PAYMENT)",
                         },
-                        unit_amount: 600,
+                        unit_amount: 60,
                     },
                     quantity: 1,
                 }
