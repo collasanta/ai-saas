@@ -5,6 +5,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { ModalProvider } from '@/components/model-provider'
 import ToasterProvider from '@/components/toaster-provider'
 import { CrispProvider } from '@/components/crisp-provider'
+import GoogleAnalytics from '@/components/GoogleAnalytics';
 
 const inter = Inter({ subsets: ['latin'] })
 

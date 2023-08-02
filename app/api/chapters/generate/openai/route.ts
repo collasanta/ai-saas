@@ -44,7 +44,7 @@ export async function POST(req: Request) {
           },
           "videoReview": {
             "type": "string",
-            "description": "A review of the content of the video"
+            "description": "A one paragraph review of the content of the video"
           },
           "keywords": {
             "type": "array",
