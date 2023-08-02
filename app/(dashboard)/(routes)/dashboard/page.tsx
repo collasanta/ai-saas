@@ -223,30 +223,7 @@ const DashboardPage = () => {
                     }
                 </>
             }
-            <div className="px-4 lg:px-8">
 
-                <div className="space-y-4 mt-4">
-                    {messages.length === 0 && !isLoading && (
-                        <Empty label="No conversations started." />
-                    )}
-                    <div className="flex flex-col-reverse gap-y-4">
-                        {messages.map((message) => (
-                            <div
-                                key={message.content}
-                                className={cn(
-                                    "p-8 w-full flex items-start gap-x-8 rounded-lg",
-                                    message.role === "user" ? "bg-white border border-black/10" : "bg-muted"
-                                )}
-                            >
-                                {message.role === "user" ? <UserAvatar /> : <BotAvatar />}
-                                <p className="text-sm">
-                                    {message.content}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
         </div>
     );
 }
