@@ -41,7 +41,7 @@ export const ChapterCard = (
     }
 
     return (
-        <div className="flex flex-col border max-w-[750px] bg-secondary border-black/5 text-card-foreground shadow-sm rounded-lg text-[13px]  py-2 px-1 hover:shadow-lg transition cursor-pointer">
+        <div className="flex flex-col border max-w-[750px] bg-secondary border-black/5 text-card-foreground shadow-sm rounded-lg text-[13px]  py-2 px-2 hover:shadow-lg transition cursor-pointer">
             <div onClick={handleClick} className="    flex items-center justify-between ">
                 <div className="flex items-center gap-x-2 truncate">
                     <div className="w-fit bg-emerald-500/10 rounded-full">
@@ -49,7 +49,7 @@ export const ChapterCard = (
                     </div>
                 </div>
                 <p className="font-semibold text-sm pr-2 text-center whitespace-break-spaces">
-                    {chapter.videoInfos.videoTitle.length > 50 ? chapter.videoInfos.videoTitle.substring(0, 30) + "..." : chapter.videoInfos.videoTitle}
+                    {chapter.videoInfos.videoTitle.length > 50 ? chapter.videoInfos.videoTitle.substring(0, 50) + "..." : chapter.videoInfos.videoTitle}
                 </p>
                 <div>
                     {

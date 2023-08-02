@@ -43,6 +43,7 @@ export async function GET() {
                         product_data: {
                             name: "ChadChapters Pro Package",
                             description:"Add 1000 credits (ONE TIME PAYMENT)",
+                            images:["https://chadchapters.com/logo.png"],
                         },
                         unit_amount: 60,
                     },
