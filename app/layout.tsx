@@ -5,7 +5,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { ModalProvider } from '@/components/model-provider'
 import ToasterProvider from '@/components/toaster-provider'
 import { CrispProvider } from '@/components/crisp-provider'
-import GoogleAnalytics from '@/components/GoogleAnalytics';
+import GoogleAnalytics from '@/components/google-analytics'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -22,6 +22,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
+      <GoogleAnalytics GA_MEASUREMENT_ID={process.env.GA_MEASUREMENT_ID}/>
         <CrispProvider />
         <body className={inter.className}>
           <ModalProvider />
