@@ -1,28 +1,11 @@
+import { GPTResponse, IYoutubeVideoInfo } from '@/lib/youtube';
 'use server'
 
 import { auth } from "@clerk/nextjs"
 import prismadb from "./prismadb"
-
 export interface IChapterList {
-    videoInfos: {
-        languages: string;
-        videoLenghtSeconds: string;
-        videoLengthMinutes: number;
-        videoLenghtFormatted: string;
-        videoTitle: string;
-        videoChannelName: string;
-        videoThumb: string;
-        videoId: string;
-        generationId: string;
-    };
-    gptResponse: {
-        chapters: {
-            timestamp: string;
-            chapter: string;
-        }[];
-        videoReview: string;
-        keywords: string[];
-    };
+    videoInfos: IYoutubeVideoInfo;
+    gptResponse:GPTResponse 
 }
 
 export const getUserChapters = async () => {

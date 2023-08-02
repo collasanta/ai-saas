@@ -11,7 +11,7 @@ export const Loader = ({gen}:{gen:boolean}) => {
                 />
             </div>
             <a className="text-sm text-muted-foreground font-semibold">
-                wait a moment...
+                loading...
             </a>
             {gen && (
                 <>

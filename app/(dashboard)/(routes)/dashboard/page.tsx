@@ -25,6 +25,8 @@ import { IYoutubeVideoInfo, getPrompt, getYoutubeVideoInfos, saveResponseDB } fr
 import { MAX_FREE_COUNTS } from "@/constants";
 import { JSONResponse } from "@/app/api/chapters/generate/openai/interfaces";
 import axios from "axios";
+import { ChapterCard } from "@/components/chapterCard";
+import { IChapterList } from "@/lib/archives";
 
 const DashboardPage = () => {
     const router = useRouter()
@@ -40,7 +42,7 @@ const DashboardPage = () => {
     const [apiLimitCount, setApiLimitCount] = useState(0)
     const [apiLimit, setApiLimit] = useState(MAX_FREE_COUNTS)
     const [videoInfos, setVideoInfos] = useState<IYoutubeVideoInfo>()
-    const [chapters, setChapters] = useState<JSONResponse>()
+    const [chapter, setChapters] = useState<IChapterList>()
     const [isLoading, setLoading] = useState(false)
 
     useEffect(() => {
@@ -78,18 +80,19 @@ const DashboardPage = () => {
                 return
             }
             setLoading(true)
-            const promptInfos = await getPrompt(videoInfos!)
-            console.log("promptInfos", promptInfos)
-            const chaptersResponse = await axios.post("/api/chapters/generate/openai", promptInfos)
-            if (chaptersResponse.status === 200) {
+            // const promptInfos = await getPrompt(videoInfos!)
+            // console.log("promptInfos", promptInfos)
+            // const chaptersResponse = await axios.post("/api/chapters/generate/openai", promptInfos)
+            if (true) {
+            // if (chaptersResponse.status === 200) {
                 await increaseApiLimit(videoInfos?.videoLengthMinutes!)
                 setApiLimitCount(await getApiLimitCount())
             }
-            const stringfiedJSONResponse = chaptersResponse.data.function_call.arguments
-            await saveResponseDB(promptInfos.tokensCount, promptInfos.aiModel, videoInfos?.generationId!, stringfiedJSONResponse)
-            
-            const jsonResponse = JSON.parse(stringfiedJSONResponse)
-            console.log("jsonResponse", jsonResponse)
+            // const stringfiedJSONResponse = chaptersResponse.data.function_call.arguments
+            // await saveResponseDB(promptInfos.tokensCount, promptInfos.aiModel, videoInfos?.generationId!, stringfiedJSONResponse)
+
+            // const jsonResponse = JSON.parse(stringfiedJSONResponse)
+            // console.log("jsonResponse", jsonResponse)
 
             const JSONResponse2 = {
                 "chapters": [
@@ -126,10 +129,12 @@ const DashboardPage = () => {
                     "religions"
                 ]
             }
-            console.log("JSONResponse2",JSONResponse2)
-
-            // setChapters(JSONResponse)
-            // console.log({ JSONResponse })
+            const chapter: IChapterList = {
+                videoInfos: videoInfos!,
+                gptResponse: JSONResponse2!
+            }
+            setChapters(chapter)
+            toast.success("Generation saved to Archives section")
         } catch (error: any) {
             if (error?.response?.status === 403) {
                 proModal.onOpen()
@@ -196,7 +201,7 @@ const DashboardPage = () => {
                             </div>
                         </>
                         :
-                        !chapters ?
+                        !chapter ?
                             <div className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-10 gap-2">
                                 <div className="col-span-10 lg:col-span-7">
                                     <div className="m-0 p-0">
@@ -234,37 +239,15 @@ const DashboardPage = () => {
                                 </div>
                             </div>
                             :
-                            <div className="rounded-lg border w-full p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-10 gap-2">
+                            <div className="rounded-lg border w-full  grid-col-start md:grid-col p-4 px-3 md:px-6 focus-within:shadow-sm grid grid-cols-10 gap-2">
                                 <div className="col-span-10 lg:col-span-7">
-                                    <div className="m-0 p-0">
-                                        <div
-                                            className="mx-auto border-0 flex flex-col md:flex-row bg-muted rounded-lg "
-                                        >
-                                            <div className="max-w-[280px] my-auto mx-auto px-3 py-4 ">
-                                                <img src={videoInfos.videoThumb} alt="thumbnail" className="rounded-lg mx-auto" />
-                                            </div>
-                                            <div className="flex flex-col justify-center md:justify-start text-center pb-4 md:pr-6 md:py-4 rounded-lg">
-                                                <p className="text-black/80 font-semibold">{videoInfos.videoTitle}</p>
-                                                <p className="pb-2 text-zinc-400 secondary text-sm">{videoInfos.videoChannelName}</p>
-                                                <div className="mx-auto py-1 rounded-lg min-w-[200px]">
-                                                    <div className="flex flex-row mb-2 bg-white rounded-lg">
-                                                        <div className="w-[45%] text-end px-2"><a className="text-black/60 text-sm text-start">Lenght:</a></div>
-                                                        <div className="w-[55%] text-start"><a className="text-sm text-gray-600 "> {videoInfos.videoLenghtFormatted}</a></div>
-                                                    </div>
-                                                    <div className="flex flex-row bg-white rounded-lg">
-                                                        <div className="w-[45%] text-end px-2"><a className="text-black/60 text-sm text-start">Cost:</a></div>
-                                                        <div className="w-[55%] text-start animate-pulse"><a className="text-md font-semibold text-primary "> {videoInfos.videoLengthMinutes} <a className="text-sm font-semibold">Credits</a></a></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <ChapterCard chapter={chapter} collapsed={true} />
                                 </div>
                                 <div className="col-span-10 text-center lg:col-span-3 w-full">
                                     <Button
                                         className="w-full"
                                         disabled={isLoading}
-                                        onClick={generateChapters}
+                                        onClick={() => { setChapters(undefined), setVideoInfos(undefined), form.reset() }}
                                     >
                                         Restart
                                     </Button>

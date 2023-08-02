@@ -1,37 +1,10 @@
 "use client"
 
 import { ChapterCard } from "@/components/chapterCard"
-// import { ChapterCard } from "@/components/chapterCard"
-import { Card } from "@/components/ui/card"
-import { IChapterList, IUserChapters, getUserChapters } from "@/lib/archives"
-import { cn } from "@/lib/utils"
-import { FileVideo, ArrowDown } from "lucide-react"
+import { IChapterList, getUserChapters } from "@/lib/archives"
+import { FileVideo } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-
-const tools = [
-  {
-    label: "Video 1",
-    icon: FileVideo,
-    color: "text-emerald-500",
-    bgColor: "bg-emerald-500/10",
-    href: "/conversation",
-  },
-  {
-    label: "Video 2",
-    icon: FileVideo,
-    color: "text-emerald-500",
-    bgColor: "bg-emerald-500/10",
-    href: "/conversation",
-  },
-  {
-    label: "Video 3",
-    icon: FileVideo,
-    color: "text-emerald-500",
-    bgColor: "bg-emerald-500/10",
-    href: "/conversation",
-  }
-]
 
 export default function Home() {
   const router = useRouter()
@@ -44,7 +17,6 @@ export default function Home() {
         console.log("chaptersData", chaptersData);
         setChapters(chaptersData);
       } catch (error) {
-        // Handle the error appropriately
         console.error('Error fetching chapters data:', error);
       }
     })();

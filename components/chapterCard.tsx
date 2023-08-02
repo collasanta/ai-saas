@@ -6,10 +6,10 @@ import { Button } from "./ui/button";
 import toast, { Toaster } from "react-hot-toast";
 
 export const ChapterCard = (
-    { chapter }: { chapter: IChapterList }
+    { chapter, collapsed = false }: { chapter: IChapterList, collapsed?: boolean }
 ) => {
 
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(collapsed);
 
     function handleClick() {
         setIsOpen(!isOpen);
@@ -32,7 +32,7 @@ export const ChapterCard = (
         if (div instanceof HTMLDivElement) {
             const textToCopy = div.innerText;
             copyToClipboard(textToCopy);
-            toast.success("Copied to clipboard");
+            toast.success(`${item} Copied to clipboard`);
         } else {
             console.error("The element with id 'div' is not a div element.");
         }
@@ -40,7 +40,7 @@ export const ChapterCard = (
     }
 
     return (
-        <div className="flex flex-col border max-w-[750px] bg-secondary border-black/5 text-card-foreground shadow-sm rounded-lg  py-4 px-4 hover:shadow-lg transition cursor-pointer">
+        <div className="flex flex-col border max-w-[750px] bg-secondary border-black/5 text-card-foreground shadow-sm rounded-lg text-[13px]  py-4 px-4 hover:shadow-lg transition cursor-pointer">
             <div onClick={handleClick} className="    flex items-center justify-between ">
                 <div className="flex items-center gap-x-2 truncate">
                     <div className="w-fit bg-emerald-500/10 rounded-full">
@@ -58,18 +58,18 @@ export const ChapterCard = (
             </div>
             {isOpen && (
                 <>
-                    <div className="flex justify-center mt-2 border bg-card  border-black/5 rounded-lg p-2">
-                        <Tabs defaultValue="chapters" className="w-full text-center mb-2 md:px-6">
-                            <TabsList>
+                    <div className="mt-6 flex justify-center border bg-card  border-black/5 rounded-lg p-2">
+                        <Tabs defaultValue="chapters" className="w-full text-center mb-4 md:px-6">
+                            <TabsList className="mb-2">
                                 <TabsTrigger value="chapters">Chapters</TabsTrigger>
                                 <TabsTrigger value="description">Review</TabsTrigger>
                             </TabsList>
-                            <TabsContent value="chapters" onClick={() => copy("chaptersDiv")}>
-                                <div className="space-x-1 align-baseline mb-2">
-                                    <Pointer className="w-5 h-5 inline-block" color="#a8a3a3" />
+                            <TabsContent value="chapters" onClick={() => copy("Chapters")}>
+                                <div className="space-x-1 align-baseline mb-3">
+                                    <Pointer className="w-4 h-4 inline-block" color="#a8a3a3" />
                                     <a className="text-zinc-400 italic align-bottom">click to copy</a>
                                 </div>
-                                <div id="chaptersDiv" className="flex flex-col justify-start pl-3 space-y-2">
+                                <div id="Chapters" className="flex flex-col justify-start pl-3 space-y-2">
                                     {
                                         chapter.gptResponse.chapters.map((chapter) => (
                                             <div className="text-start" key={chapter.timestamp}>
@@ -80,12 +80,12 @@ export const ChapterCard = (
                                     }
                                 </div>
                             </TabsContent>
-                            <TabsContent value="description" onClick={() => copy("reviewDiv")}>
-                                <div className="space-x-1 align-baseline mb-2">
-                                    <Pointer className="w-5 h-5 inline-block" color="#a8a3a3" />
+                            <TabsContent value="description" onClick={() => copy("Review")}>
+                                <div className="space-x-1 align-baseline mb-3">
+                                    <Pointer className="w-4 h-4 inline-block" color="#a8a3a3" />
                                     <a className="text-zinc-400 italic align-bottom">click to copy</a>
                                 </div>
-                                <div id="reviewDiv" className="px-1">
+                                <div id="Review" className="px-1">
                                     {chapter.gptResponse.videoReview}
                                     <div className="space-x-1 mt-2 align-baseline mb-2">
                                         <br></br>

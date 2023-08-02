@@ -29,6 +29,15 @@ export interface IPromptInfos {
     formattedSubtitles: string
 }
 
+export interface GPTResponse {
+    chapters: {
+        timestamp: string;
+        chapter: string;
+    }[];
+    videoReview: string;
+    keywords: string[];
+}
+
 // SERVER ACTIONS ///////////////////////////////////////////////////////////////////////////////////////////////////
 export const getYoutubeVideoInfos = async (url: string): Promise<IYoutubeVideoInfo> => {
     console.log("getYoutubeVideoInfos")
@@ -56,10 +65,10 @@ export const getYoutubeVideoInfos = async (url: string): Promise<IYoutubeVideoIn
     let languages = ""
     let filter = captions.map((caption: any) => { languages = languages + caption.languageCode + " " })
 
-    
+
     const archiveID = uid()
     const VideoInfos = { languages, videoLenghtSeconds, videoLengthMinutes, videoLenghtFormatted, videoTitle, videoChannelName, videoThumb, videoId: id, generationId: archiveID }
-    
+
     await prismadb.archives.create({
         data: {
             generationId: archiveID,
@@ -67,7 +76,7 @@ export const getYoutubeVideoInfos = async (url: string): Promise<IYoutubeVideoIn
             videoInfos: JSON.stringify(VideoInfos),
         }
     })
-    
+
     console.timeEnd("getYoutubeVideoInfos")
     return VideoInfos
 }
