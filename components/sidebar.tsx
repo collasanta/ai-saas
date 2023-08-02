@@ -48,7 +48,7 @@ const Sidebar = ({
                         <Image src="/logo.png" fill alt="logo" />
                     </div>
                     <h1 className={cn("text-2xl font-bold", montserrat.className)}>
-                        Chaptfy
+                        ChadChapters
                     </h1>
                 </Link>
                 <div className="space-y-1">

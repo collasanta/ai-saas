@@ -27,6 +27,7 @@ import { JSONResponse } from "@/app/api/chapters/generate/openai/interfaces";
 import axios from "axios";
 import { ChapterCard } from "@/components/chapterCard";
 import { IChapterList } from "@/lib/archives";
+import Image from "next/image";
 
 const DashboardPage = () => {
     const router = useRouter()
@@ -80,58 +81,24 @@ const DashboardPage = () => {
                 return
             }
             setLoading(true)
-            // const promptInfos = await getPrompt(videoInfos!)
-            // console.log("promptInfos", promptInfos)
-            // const chaptersResponse = await axios.post("/api/chapters/generate/openai", promptInfos)
-            if (true) {
-            // if (chaptersResponse.status === 200) {
+            const promptInfos = await getPrompt(videoInfos!)
+            console.log("promptInfos", promptInfos)
+            const timeInit = new Date().getTime()
+            const chaptersResponse = await axios.post("/api/chapters/generate/openai", promptInfos)
+            const timeEnd = new Date().getTime()
+            const apiCallSeconds = Math.floor((timeEnd - timeInit) / 1000);
+            if (chaptersResponse.status === 200) {
                 await increaseApiLimit(videoInfos?.videoLengthMinutes!)
                 setApiLimitCount(await getApiLimitCount())
             }
-            // const stringfiedJSONResponse = chaptersResponse.data.function_call.arguments
-            // await saveResponseDB(promptInfos.tokensCount, promptInfos.aiModel, videoInfos?.generationId!, stringfiedJSONResponse)
+            const stringfiedJSONResponse = chaptersResponse.data.function_call.arguments
+            await saveResponseDB(promptInfos.tokensCount, promptInfos.aiModel, videoInfos?.generationId!, stringfiedJSONResponse, apiCallSeconds)
 
-            // const jsonResponse = JSON.parse(stringfiedJSONResponse)
-            // console.log("jsonResponse", jsonResponse)
+            const jsonResponse = JSON.parse(stringfiedJSONResponse)
 
-            const JSONResponse2 = {
-                "chapters": [
-                    {
-                        "timestamp": "0:00",
-                        "chapter": "Introduction"
-                    },
-                    {
-                        "timestamp": "0:08",
-                        "chapter": "Being a Palestinian Christian"
-                    },
-                    {
-                        "timestamp": "0:37",
-                        "chapter": "Coexistence of Christians and Muslims in Palestine"
-                    },
-                    {
-                        "timestamp": "0:51",
-                        "chapter": "Difficulties due to tension between Israel and Palestine"
-                    },
-                    {
-                        "timestamp": "1:17",
-                        "chapter": "Hope for the future"
-                    }
-                ],
-                "videoReview": "The video transcript features a Palestinian Christian discussing the tension and coexistence between different religions in Palestine. The speaker explains that many people are surprised to see a Palestinian who is a Christian, but Christianity has existed in Palestine since the time of Jesus. The speaker also mentions the difficulties faced due to the tension between Israel and Palestine. However, they express hope for the future, emphasizing the importance of love among the three major religions.",
-                "keywords": [
-                    "Palestinian Christian",
-                    "tension",
-                    "coexistence",
-                    "Israel",
-                    "Palestine",
-                    "hope",
-                    "love",
-                    "religions"
-                ]
-            }
             const chapter: IChapterList = {
                 videoInfos: videoInfos!,
-                gptResponse: JSONResponse2!
+                gptResponse: jsonResponse!
             }
             setChapters(chapter)
             toast.success("Generation saved to Archives section")
@@ -163,7 +130,7 @@ const DashboardPage = () => {
 
             {isLoading ?
                 <div className="p-8 rounded-lg w-full flex items-center justify-center ">
-                    <Loader gen={videoInfos!!} />
+                    <Loader gen={!!videoInfos} />
                 </div>
                 :
                 <>
@@ -208,8 +175,8 @@ const DashboardPage = () => {
                                         <div
                                             className="mx-auto border-0 flex flex-col md:flex-row bg-muted rounded-lg "
                                         >
-                                            <div className="max-w-[280px] my-auto mx-auto px-3 py-4 ">
-                                                <img src={videoInfos.videoThumb} alt="thumbnail" className="rounded-lg mx-auto" />
+                                            <div className="w-[280px] min-w-[230px] my-auto mx-auto px-3 py-4">
+                                                <Image src={videoInfos.videoThumb} width={280} height={160} alt="thumbnail" className="rounded-lg mx-auto" />
                                             </div>
                                             <div className="flex flex-col justify-center md:justify-start text-center pb-4 md:pr-6 md:py-4 rounded-lg">
                                                 <p className="text-black/80 font-semibold">{videoInfos.videoTitle}</p>

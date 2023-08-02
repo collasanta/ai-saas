@@ -41,7 +41,7 @@ export async function GET() {
                     price_data: {
                         currency: "USD",
                         product_data: {
-                            name: "Pro Package",
+                            name: "ChadChapters Pro Package",
                             description:"Add 1000 credits (ONE TIME PAYMENT)",
                         },
                         unit_amount: 1000,

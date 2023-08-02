@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Button } from "./ui/button";
 import toast, { Toaster } from "react-hot-toast";
+import Image from "next/image";
 
 export const ChapterCard = (
     { chapter, collapsed = false }: { chapter: IChapterList, collapsed?: boolean }
@@ -44,7 +45,7 @@ export const ChapterCard = (
             <div onClick={handleClick} className="    flex items-center justify-between ">
                 <div className="flex items-center gap-x-2 truncate">
                     <div className="w-fit bg-emerald-500/10 rounded-full">
-                        <img src={chapter.videoInfos.videoThumb} className="rounded-md max-w-[75px] md:max-w-[100px]" alt="thumbnail" />
+                        <Image src={chapter.videoInfos.videoThumb} width={112} height={64} alt="thumbnail" className="rounded-md"/>
                     </div>
                 </div>
                 <p className="font-semibold text-sm pr-2 text-center whitespace-break-spaces">

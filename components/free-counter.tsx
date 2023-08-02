@@ -7,9 +7,7 @@ import { Progress } from "./ui/progress";
 import { Button } from "./ui/button";
 import { Zap } from "lucide-react";
 import { useProModal } from "@/hooks/use-pro-modal";
-import { getApiLimit } from "@/lib/api-limit";
-import { redirect } from 'next/navigation';
-import Link from 'next/link';
+
 
 
 interface FreeCounterProps {
@@ -20,7 +18,7 @@ interface FreeCounterProps {
     tight?: boolean;
 }
 
-const FreeCounter = ({ apiLimitCount = 0, apiLimit = 3, hideButton = false, dark = false, tight = false
+const FreeCounter = ({ apiLimitCount = 0, apiLimit = MAX_FREE_COUNTS, hideButton = false, dark = false, tight = false
 }: FreeCounterProps) => {
     const [mounted, setMounted] = useState(false)
     const proModal = useProModal()
@@ -46,12 +44,10 @@ const FreeCounter = ({ apiLimitCount = 0, apiLimit = 3, hideButton = false, dark
 
                     {!hideButton &&
                     
-                    <Link href="https://c9eqb45m7pt.typeform.com/to/RxzJlE9D" rel="noopener noreferrer" target="_blank">
-                        <Button variant="premium" className="w-full">
+                        <Button variant="premium" onClick={()=>proModal.onOpen()} className="w-full">
                             Buy Credits
                             <Zap className="w-4 h-4 ml-2 fill-white" />
                         </Button>
-                    </Link> 
                     }
 
                 </CardContent>

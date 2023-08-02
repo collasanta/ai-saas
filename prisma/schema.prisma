@@ -52,5 +52,6 @@ model Archives {
   totalTokens Int?
   USDCost Float?
   gptResponse Json?
+  apiCallSeconds String?
 }
 
