@@ -13,7 +13,7 @@ export default function GoogleAnalytics({GA_MEASUREMENT_ID} : {GA_MEASUREMENT_ID
       const url = pathname + searchParams.toString()
   
       pageview(GA_MEASUREMENT_ID, url);
-      
+      console.log("GA_MEASUREMENT_ID", GA_MEASUREMENT_ID)
   }, [pathname, searchParams, GA_MEASUREMENT_ID]);  
   return (
         <>
@@ -25,11 +25,6 @@ export default function GoogleAnalytics({GA_MEASUREMENT_ID} : {GA_MEASUREMENT_ID
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
-
-                gtag('consent', 'default', {
-                    'analytics_storage': 'denied'
-                });
-                
                 gtag('config', '${GA_MEASUREMENT_ID}', {
                     page_path: window.location.pathname,
                 });
