@@ -1,0 +1,25 @@
+app: serverless-chadchapters
+service: serverless-chadchapters
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+
+functions:
+  bot-get-last-videos:
+    handler: src/bot-get-last-videos.handler
+    events:
+      - httpApi:
+          path: /bot/getlastvideos
+          method: get
+  bot-comment-videos:
+    handler: src/bot-comment-videos.handler
+    events:
+      - httpApi:
+          path: /bot/commentvideos
+          method: get
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-offline

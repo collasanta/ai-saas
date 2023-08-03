@@ -1,0 +1,47 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
+}
+
+datasource db {
+  provider = "cockroachdb"
+  url      = env("DATABASE_URL")
+}
+
+model BotChannels {
+  id    Int    @id @default(sequence())
+  channelID String @default("") @unique
+  channelName String @default("") 
+  commentedVideos Int @default(0)
+}
+
+model BotVideos {
+  id    Int    @id @default(sequence())
+  videoID String @unique
+  videoName String 
+  videoChannel String 
+  videoLenght Int
+  videoComment String @default("")
+  createdAt DateTime @default(now())
+  status String  @default("false")
+  updatedAt DateTime @updatedAt
+  USDCost Float @default(0)
+  totalTokens Int @default(0)
+}
+
+model BotDashboard {
+  id  Int    @id @default(sequence())
+  Date String @unique
+  scannedVideos Int 
+  commentedVideos Int
+  scanRuns Int @default(0)
+  commentRuns Int @default(0)
+  pageViewFromYoutube  Int
+}
+
+model youtubeOathTokens {
+  id  Int    @id @default(sequence())
+  refreshToken String @unique
+  actualToken String 
+  expireData String
+}
