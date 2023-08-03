@@ -8,12 +8,6 @@ import { env } from "process";
 
 export default authMiddleware({
     publicRoutes:["/"],
-    afterAuth: async (auth, req) => {
-      if(auth.userId && req.url === `${env.NEXT_PUBLIC_APP_URL}/`){
-        const orgSelection = new URL('/dashboard', req.url)
-        return NextResponse.redirect(orgSelection)
-      }
-    }
 });
 
 export const config = {
