@@ -14,7 +14,11 @@ export default function GoogleAnalytics({GA_MEASUREMENT_ID} : {GA_MEASUREMENT_ID
   
       pageview(GA_MEASUREMENT_ID, url);
       console.log("GA_MEASUREMENT_ID", GA_MEASUREMENT_ID)
+      console.log("url", url)
+      console.log("pathname", pathname)
+      console.log("searchParams.toString()", searchParams.toString())
   }, [pathname, searchParams, GA_MEASUREMENT_ID]);  
+
   return (
         <>
             <Script strategy="afterInteractive" 
