@@ -11,7 +11,6 @@ export default authMiddleware({
     afterAuth: async (auth, req) => {
       if(auth.userId && req.url === `${env.NEXT_PUBLIC_APP_URL}/`){
         const orgSelection = new URL('/dashboard', req.url)
-        console.log("redirected")
         return NextResponse.redirect(orgSelection)
       }
     }
