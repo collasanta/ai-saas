@@ -7,7 +7,7 @@ import { env } from "process";
 // See https://clerk.com/docs/nextjs/middleware for more information about configuring your middleware
 
 export default authMiddleware({
-    publicRoutes:["/", "/api/webhook"],
+    publicRoutes:["/"],
     afterAuth: async (auth, req) => {
       if(auth.userId && req.url === `${env.NEXT_PUBLIC_APP_URL}/`){
         const orgSelection = new URL('/dashboard', req.url)
