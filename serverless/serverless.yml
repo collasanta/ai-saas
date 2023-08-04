@@ -4,21 +4,43 @@ frameworkVersion: '3'
 
 provider:
   name: aws
+  apiGateway:
+      apiKeys:
+      - name: apiKey
+        value: ${env:MY_API_KEY}
   runtime: nodejs16.x
+  timeout: 900 
 
 functions:
   bot-get-last-videos:
     handler: src/bot-get-last-videos.handler
     events:
-      - httpApi:
+      - http:
           path: /bot/getlastvideos
-          method: get
+          method: post
+          private: true
+  
+  # bot-get-last-videos-cron:
+  #   handler: src/bot-get-last-videos-cron.cron
+  #   events:
+  #     # Invoke Lambda function every minute
+  #     - schedule: cron(0 */4 * * ? *)
+
   bot-comment-videos:
     handler: src/bot-comment-videos.handler
     events:
-      - httpApi:
+      - http:
           path: /bot/commentvideos
           method: get
+          private: true
+
+  # bot-comment-video-cron:
+  #   handler: src/bot-comment-video-cron.cron
+  #   events:
+  #     # Invoke Lambda function every minute
+  #     - schedule: cron(0 4/4 * * ? *)
+
+useDotenv: true
 
 plugins:
   - serverless-plugin-typescript
