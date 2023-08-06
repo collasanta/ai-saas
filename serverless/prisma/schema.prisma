@@ -27,6 +27,7 @@ model BotVideos {
   updatedAt DateTime @updatedAt
   USDCost Float @default(0)
   totalTokens Int @default(0)
+  apiCallDuration Int @default(0)
 }
 
 model BotDashboard {
@@ -37,6 +38,8 @@ model BotDashboard {
   scanRuns Int @default(0)
   commentRuns Int @default(0)
   pageViewFromYoutube  Int
+  lastScanDate DateTime?
+  lastCommentDate DateTime? 
 }
 
 model youtubeOathTokens {

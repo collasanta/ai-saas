@@ -1,4 +1,4 @@
-import { APIGatewayEvent, APIGatewayProxyResult } from 'aws-lambda'
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import { prismadbbot } from './database'
 import * as yt from 'youtube-info-streams';
 var getSubtitles = require('youtube-captions-scraper').getSubtitles;
@@ -10,12 +10,20 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 const OPENAI_GPT35_4K_USD_PER_TOKEN = 0.0000015
 const { google } = require('googleapis');
-
+const client = new google.auth.OAuth2(
+  process.env.YT_CLIENT_ID,
+  process.env.YT_CLIENT_SECRET,
+  process.env.YT_REDIRECT_URL
+);
 
 export const handler = async (
-  event: APIGatewayEvent
+  event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
+    const { doComments } = JSON.parse(event.body!)
+    if (doComments){
+      await setYoutubeClient()
+    }
     let commentedVideos = 0
     //LOG INICIAL
     const currentDate = new Date().toISOString().split('T')[0];
@@ -35,16 +43,15 @@ export const handler = async (
 
     const videos = await prismadbbot.botVideos.findMany({
       where: {
-        videoID: "zhHch_Qu2sk",
-
+        status: {
+          in: doComments ? ["fetched", "generated"] : ["fetched"]
+        }
       }
-    })
-
+    });
+    console.log("videos Pulled: ", videos.length)
     for (const video of videos) {
-      console.log("await 10sec... between calls")
-      await new Promise(r => setTimeout(r, 10000));
-      if (video.videoComment === "") {
-        console.log("COMMENT START - videoID: ", video.videoID)
+      if (video.status === "fetched") {
+        console.log("START GENERATION - videoID: ", video.videoID)
         const videoInfos = await yt.info(video.videoID);
         if (videoInfos.player_response.captions.playerCaptionsTracklistRenderer === undefined) {
           await prismadbbot.botVideos.update({
@@ -86,35 +93,34 @@ export const handler = async (
             return formattedTime; // Return the formatted time
           }
         }))
+
         const formattedSubtitles = finalTimmedSubsArr.join(" ")
         const listItemsCount: any = await getListCount(`${videoInfos.videoDetails.lengthSeconds}`)
-        console.log("listItemsCount: ", listItemsCount)
         const tokensCount = await countTokens(formattedSubtitles, "input")
         const aiModel = await getAiModel(tokensCount!)
-
-        const prompt = `Analyze and interpret this video: ${formattedSubtitles}`
+        const prompt = `Analyze and interpret this video: ${formattedSubtitles},  and create maximum ${listItemsCount+2} highlights for it, each highlight description must not surpass 14 words, Also create a one paragraph review of the video content`
         let Functions = [
           {
             "name": "video_interpreter",
-            "description": "This functions takes a video and creates a list of chapters, a video review",
+            "description": `This functions takes a youtube video transcript and creates highlights containing the main points of the whole video. It also creates a one paragraph review of the video content.`,
             "parameters": {
               // SCHEMA:
               "type": "object",
               "properties": {
-                "chapters": {
+                "highlights": {
                   "type": "array",
-                  "description": `An array of maximum ${listItemsCount} objects decribing the most relevant parts of the video as chapters. (The maximum number of items is ${listItemsCount} please respect it)`,
+                  "description": `An array of objects containing the highlights for the main points of the given video.`,
                   "items": {
                     "type": "object",
-                    "description": "the chapter with his beggining time and description",
+                    "description": "this object contains the timestamp and the content of the highlight",
                     "properties": {
                       "timestamp": {
                         "type": "string",
-                        "description": "time of the begginning of the chapter in the format of minutes:seconds (mm:ss)",
+                        "description": "format of minutes:seconds (mm:ss)",
                       },
-                      "chapter": {
+                      "highlight": {
                         "type": "string",
-                        "description": "A description of the chapter",
+                        "description": "A highlight description",
                       }
                     }
                   },
@@ -129,34 +135,36 @@ export const handler = async (
           }
         ]
 
-        console.log("calling OpenAi")
+        console.log("--Calling OpenAi")
+        const dateStart = new Date()
         const OpenAiresponse = await openai.createChatCompletion({
           model: aiModel!,
-          temperature: 0,
+          temperature: 0.5,
           messages: [
             { role: "system", "content": "You are a helpful reader and interpreter" },
             { role: "user", content: prompt }],
           functions: Functions,
           function_call: { name: "video_interpreter" }
         });
-        console.log("finish OpenAi request")
+        const dateEnd = new Date()
+        const apiCallDuration = Math.floor((dateEnd.getTime() - dateStart.getTime()) / 1000);
+        console.log("--Finish OpenAi request in:", apiCallDuration, "seconds")
 
-
+        const stringfiedJSONResponse = OpenAiresponse.data.choices[0].message.function_call.arguments
+        const parsedstringfiedJSONResponse = JSON.parse(stringfiedJSONResponse)
+        
         if (OpenAiresponse.status !== 200) {
           console.log(`Erro na call da Open Ai : ${OpenAiresponse.statusText}`)
           await prismadbbot.botVideos.update({
             where: { id: video.id },
             data: {
               status: "erroApiGPT",
+              apiCallDuration: apiCallDuration!
             }
           })
           continue
         }
         let totalTokens = OpenAiresponse.data.usage.total_tokens
-
-        const treatedResponse = OpenAiresponse.data.choices[0].message
-        const stringfiedJSONResponse = OpenAiresponse.data.choices[0].message.function_call.arguments
-        const parsedstringfiedJSONResponse = JSON.parse(stringfiedJSONResponse)
 
         const finalText = await formatVideoData(parsedstringfiedJSONResponse)
 
@@ -166,94 +174,48 @@ export const handler = async (
             videoComment: finalText,
             status: "generated",
             totalTokens: totalTokens,
-            USDCost: totalTokens * OPENAI_GPT35_4K_USD_PER_TOKEN
+            USDCost: totalTokens * OPENAI_GPT35_4K_USD_PER_TOKEN,
+            apiCallDuration: apiCallDuration
           }
         })
 
-        console.log("finalText", finalText)
-
-        // YOUTUBE COMMENT
-        const client = new google.auth.OAuth2(
-          process.env.YT_CLIENT_ID,
-          process.env.YT_CLIENT_SECRET,
-          process.env.YT_REDIRECT_URL
-        );
-
-        // GET TOKENS
-        let tokenData = await prismadbbot.youtubeOathTokens.findFirst({
-        })
-        let expireData = tokenData?.expireData
-        let actualToken = tokenData?.actualToken
-        let refreshToken = tokenData?.refreshToken
-
-        if (+expireData! < Date.now()) {
-          console.log("token expired, renew process started")
-          await client.setCredentials({
-            refresh_token: process.env.YT_REFRESH_TOKEN,
-          });
-          console.log("before refreshAccessToken")
-
-          const response = await client.refreshAccessToken();
-          console.log("response refreshAccessToken", response)
-          await client.setCredentials({
-            access_token: response.credentials.access_token,
-            refresh_token: refreshToken,
-            expiry_date: response.credentials.expiry_date
-          });
-          await prismadbbot.youtubeOathTokens.update({
-            where: {
-              id: 1
-            },
-            data: {
-              actualToken: response.credentials.access_token,
-              expireData: `${response.credentials.expiry_date}`
-            }
-          })
-        } else {
-          await client.setCredentials({
-            access_token: actualToken,
-            refresh_token: process.env.YT_REFRESH_TOKEN,
-            expiry_date: expireData
-          });
+        if (doComments) {
+          const makeCommentResponse = await makeComment(finalText, video.videoID)
+          if (makeCommentResponse) {
+            commentedVideos++
+            console.log("--successful commented video: ", video.videoID)
+            console.log(" ")
+          } else {
+            console.log("--error commenting video: ", video.videoID)
+            console.log(" ")
+  
+          }
         }
-
-        const youtube = google.youtube({
-          version: 'v3',
-          auth: client,
-        });
-
-        const responseYoutubeApiComment = await youtube.commentThreads.insert({
-          part: 'snippet',
-          requestBody: {
-            snippet: {
-              videoId: video.id,
-              topLevelComment: {
-                snippet: {
-                  textOriginal: finalText,
-                },
-              },
-            },
-          },
-        });
-
-        console.log("youtube response comment api", responseYoutubeApiComment)
-        if (responseYoutubeApiComment.status === 200) {
-          console.log("commentado com sucesso, video: ", video.id)
-          await prismadbbot.botVideos.update({
-            where: { id: video.id },
-            data: {
-              status: "commented",
-            }
-          })
+        continue
+      } else if (video.status === "generated") {
+        const makeCommentResponse = await makeComment(video.videoComment, video.videoID)
+        if (makeCommentResponse) {
           commentedVideos++
-          continue
+          console.log("--successful commented video: ", video.videoID)
+          console.log(" ")
+
+          console.log(" ")
+          if (video.status === "generated"){
+            console.log("await 15sec... between comment api calls")
+            await new Promise(r => setTimeout(r, 15000));
+          } else {
+            await new Promise(r => setTimeout(r, 2000));
+          }
+        } else {
+          console.log("--error commenting video: ", video.videoID)
+          console.log(" ")
+
         }
       }
-      
     }
 
     // ********************UPDATE DASHBOARD**********************************
-
+    console.log("DashBoard Updated: ", currentDate, " commentedVideos:", commentedVideos)
     await prismadbbot.botDashboard.update({
       where: { Date: currentDate },
       data: {
@@ -262,12 +224,20 @@ export const handler = async (
     })
     // ********************UPDATE DASHBOARD*********************************
 
+
   } catch (error: any) {
+    console.log("Error: ", error.message)
     return {
       statusCode: 400,
       body: JSON.stringify({ error: error.message }),
     }
   }
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify(true),
+  }
+
 
   async function getListCount(totalSeconds: string) {
     if (+totalSeconds < 180) { //menor que 3 minutos
@@ -303,17 +273,18 @@ export const handler = async (
   async function countTokens(text: string, type: "input" | "output") {
     if (type === "input") {
       text.concat()
-      let Functions = [
+      let context = [
         {
           "name": "video_interpreter",
-          "description": "This functions takes a video transcript and creates a list of chapters, a video review, and a list of keywords based on the transcript.",
+          "description": "This functions takes a youtube video transcript and creates and format at least five timestamps that highlights the main points of a given video",
           "parameters": {
             // SCHEMA:
             "type": "object",
+            "description": `take in to account that this will be a youtube comment and all the content must fit in it`,
             "properties": {
               "chapters": {
                 "type": "array",
-                "description": `An array of objects decribing the most relevant parts of the video, the array max lenght must be ${10}.`,
+                "description": `An array of objects with minimum 5 and maximum ${10} timestamps that highlights the main points of a given video .`,
                 "items": {
                   "type": "object",
                   "description": "object with timestamp and a descriptive chapter",
@@ -348,7 +319,7 @@ export const handler = async (
         messages: [
           { role: "system", "content": "You are a helpful reader and interpreter" },
           { role: "user", content: prompt }],
-        functions: Functions,
+        functions: context,
       })
       return InputTokenCount
     }
@@ -364,25 +335,105 @@ export const handler = async (
   }
 
   async function formatVideoData(data: any): Promise<string> {
-    const { chapters, videoReview } = data;
+    const { highlights, videoReview } = data;
     let formattedChapters = '';
 
-    chapters.forEach((chapter: any, index: any) => {
-      const { timestamp, chapter: chapterTitle } = chapter;
-      const formattedChapter = `${timestamp} ${chapterTitle}`;
+    highlights.forEach((chapter: any, index: any) => {
+      const { timestamp, highlight } = chapter;
+      const formattedChapter = `${timestamp} ${highlight}`;
 
       formattedChapters += `${formattedChapter}\n`;
     });
 
     const reviewSection = `Review:\n${videoReview}`;
 
-    return `Yess, AI Chad watched the video and here is the review:\n${formattedChapters}\n${reviewSection}\nThanks Chad ;)`;
+    return `Yess, AI Chad summarized the video for you:\n${formattedChapters}\n${reviewSection}\n\nThanks Chad ;)`;
   }
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify( true ),
+  async function setYoutubeClient() {
+    console.log("setting youtube client")
+    // GET TOKENS
+    let tokenData = await prismadbbot.youtubeOathTokens.findFirst({
+    })
+    let expireData = tokenData?.expireData
+    let actualToken = tokenData?.actualToken
+    let refreshToken = tokenData?.refreshToken
+
+    if (+expireData! < Date.now()) {
+      console.log("token expired, renew process started")
+      const setCredentials = await client.setCredentials({
+        refresh_token: refreshToken,
+      });
+      const response = await client.refreshAccessToken();
+      const setCredentials2 = await client.setCredentials({
+        access_token: response.credentials.access_token,
+        refresh_token: refreshToken,
+        expiry_date: response.credentials.expiry_date
+      });
+      await prismadbbot.youtubeOathTokens.update({
+        where: {
+          id: 1
+        },
+        data: {
+          actualToken: response.credentials.access_token,
+          expireData: `${response.credentials.expiry_date}`
+        }
+      })
+      console.log("refresh token updated")
+    } else {
+      console.log("token valid, using actual token")
+      await client.setCredentials({
+        access_token: actualToken,
+        refresh_token: refreshToken,
+        expiry_date: expireData
+      });
+    }
   }
+
+  async function makeComment(comment: string, videoID: string) {
+    // YOUTUBE COMMENT
+    const youtubeClient = google.youtube({
+      version: 'v3',
+      auth: client,
+    });
+
+    const responseYoutubeApiComment = await youtubeClient.commentThreads.insert({
+      part: 'snippet',
+      requestBody: {
+        snippet: {
+          videoId: videoID,
+          topLevelComment: {
+            snippet: {
+              textOriginal: comment,
+            },
+          },
+        },
+      },
+    });
+
+    if (responseYoutubeApiComment.status === 200) {
+      await prismadbbot.botVideos.update({
+        where: { videoID: videoID },
+        data: {
+          status: "commented",
+        }
+      })
+      return true
+    } else {
+      console.log("error in youtube api comment: ", responseYoutubeApiComment)
+      return false
+    }
+  }
+
+  async function convertSecondsToMinutesAndSeconds(timeInSeconds: string) {
+    const minutes = Math.floor(+timeInSeconds / 60);
+    const seconds = +timeInSeconds % 60;
+    const formattedMinutes = String(minutes);
+    const formattedSeconds = String(seconds).padStart(2, '0');
+    const formattedTime = `${formattedMinutes}:${formattedSeconds}`;
+    return formattedTime;
+  }
+
 }
 
 

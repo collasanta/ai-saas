@@ -6,7 +6,11 @@ export const cron = async () => {
 
   try {
     console.log("start botGetLastVideosUrlCall")
-    const botGetLastVideosUrlCall = await fetch(botGetLastVideosUrl, { method: 'GET', headers: { 'x-api-key': apiKey } });
+    const botGetLastVideosUrlCall = await fetch(botGetLastVideosUrl,
+      {
+        method: 'POST', headers: { 'x-api-key': apiKey },
+        body: JSON.stringify({ hoursPast: 3 })
+      });
     if (!botGetLastVideosUrlCall.ok) {
       throw new Error(`Network response was not ok. Status: ${botGetLastVideosUrlCall.status}`);
     }

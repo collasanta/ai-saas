@@ -24,6 +24,7 @@
     "googleapis": "^123.0.0",
     "openai": "^3.3.0",
     "youtube-captions-scraper": "^2.0.0",
-    "youtube-info-streams": "^1.0.8"
+    "youtube-info-streams": "^1.0.8",
+    "youtubei.js": "^5.8.0"
   }
 }

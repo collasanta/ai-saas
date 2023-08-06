@@ -31,7 +31,7 @@ functions:
     events:
       - http:
           path: /bot/commentvideos
-          method: get
+          method: post
           private: true
 
   # bot-comment-video-cron:
