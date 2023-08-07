@@ -1,15 +1,18 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import { prismadbbot } from './database'
+import { PrismaClient } from '@prisma/client'
+const prismadbbot = new PrismaClient()
 import * as yt from 'youtube-info-streams';
-var getSubtitles = require('youtube-captions-scraper').getSubtitles;
+// var getSubtitles = require('youtube-captions-scraper').getSubtitles;
+import { getSubtitles } from 'youtube-captions-scraper';
 import { promptTokensEstimate } from "openai-chat-tokens";
-const { Configuration, OpenAIApi } = require("openai");
+import { Configuration, OpenAIApi } from "openai";
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
 const OPENAI_GPT35_4K_USD_PER_TOKEN = 0.0000015
-const { google } = require('googleapis');
+// const { google } = require('googleapis');
+import { google } from 'googleapis';
+
 const client = new google.auth.OAuth2(
   process.env.YT_CLIENT_ID,
   process.env.YT_CLIENT_SECRET,
@@ -17,14 +20,14 @@ const client = new google.auth.OAuth2(
 );
 
 export const handler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+  event
+) => {
+  let commentedVideos = 0
   try {
-    const { doComments } = JSON.parse(event.body!)
-    if (doComments){
+    const { doComments } = JSON.parse(event.body)
+    if (doComments) {
       await setYoutubeClient()
     }
-    let commentedVideos = 0
     //LOG INICIAL
     const currentDate = new Date().toISOString().split('T')[0];
     await prismadbbot.botDashboard.upsert({
@@ -65,7 +68,7 @@ export const handler = async (
         }
         let captions = videoInfos.player_response.captions.playerCaptionsTracklistRenderer.captionTracks
         let languages = ""
-        let filter = captions.map((caption: any) => { languages = languages + " " + caption.languageCode })
+        let filter = captions.map((caption) => { languages = languages + " " + caption.languageCode })
         let languagesArr = languages.split(" ")
         const languagesArrFiltered = languagesArr.filter((str) => str !== '');
         let selectedSub = languagesArr.find(a => a.includes("en"));
@@ -77,14 +80,14 @@ export const handler = async (
           lang: selectedSub // default: `en`
         })
 
-        let finalTimmedSubsArr = await Promise.all(subs.map(async (sub: any) => {
+        let finalTimmedSubsArr = await Promise.all(subs.map(async (sub) => {
           // TESTE FUTURO
           //AQUI ROLA UMA POSSIVEL OTIMIZACAO. COMO? DIMINUINDO A FREQUENCIA DAS TIMESTAMPS (só voltar o tempo junto qdo for impar o contador por ex)
 
           let time = await convertSecondsToMinutesAndSeconds(sub.start.split(".")[0])
           let timedsub = time + " " + sub.text
           return timedsub
-          async function convertSecondsToMinutesAndSeconds(timeInSeconds: string) {
+          async function convertSecondsToMinutesAndSeconds(timeInSeconds) {
             const minutes = Math.floor(+timeInSeconds / 60); // Get the number of minutes
             const seconds = +timeInSeconds % 60; // Get the number of remaining seconds
             const formattedMinutes = String(minutes) // Add leading zero if needed
@@ -95,10 +98,10 @@ export const handler = async (
         }))
 
         const formattedSubtitles = finalTimmedSubsArr.join(" ")
-        const listItemsCount: any = await getListCount(`${videoInfos.videoDetails.lengthSeconds}`)
+        const listItemsCount = await getListCount(`${videoInfos.videoDetails.lengthSeconds}`)
         const tokensCount = await countTokens(formattedSubtitles, "input")
-        const aiModel = await getAiModel(tokensCount!)
-        const prompt = `Analyze and interpret this video: ${formattedSubtitles},  and create maximum ${listItemsCount+2} highlights for it, each highlight description must not surpass 14 words, Also create a one paragraph review of the video content`
+        const aiModel = await getAiModel(tokensCount)
+        const prompt = `Analyze and interpret this video: ${formattedSubtitles},  and create maximum ${listItemsCount + 2} highlights for it, each highlight description must not surpass 14 words, Also create a one paragraph review of the video content`
         let Functions = [
           {
             "name": "video_interpreter",
@@ -138,7 +141,7 @@ export const handler = async (
         console.log("--Calling OpenAi")
         const dateStart = new Date()
         const OpenAiresponse = await openai.createChatCompletion({
-          model: aiModel!,
+          model: aiModel,
           temperature: 0.5,
           messages: [
             { role: "system", "content": "You are a helpful reader and interpreter" },
@@ -152,14 +155,14 @@ export const handler = async (
 
         const stringfiedJSONResponse = OpenAiresponse.data.choices[0].message.function_call.arguments
         const parsedstringfiedJSONResponse = JSON.parse(stringfiedJSONResponse)
-        
+
         if (OpenAiresponse.status !== 200) {
           console.log(`Erro na call da Open Ai : ${OpenAiresponse.statusText}`)
           await prismadbbot.botVideos.update({
             where: { id: video.id },
             data: {
               status: "erroApiGPT",
-              apiCallDuration: apiCallDuration!
+              apiCallDuration: apiCallDuration
             }
           })
           continue
@@ -188,7 +191,7 @@ export const handler = async (
           } else {
             console.log("--error commenting video: ", video.videoID)
             console.log(" ")
-  
+
           }
         }
         continue
@@ -200,9 +203,9 @@ export const handler = async (
           console.log(" ")
 
           console.log(" ")
-          if (video.status === "generated"){
-            console.log("await 15sec... between comment api calls")
-            await new Promise(r => setTimeout(r, 15000));
+          if (video.status === "generated") {
+            console.log("await 30sec... between comment api calls")
+            await new Promise(r => setTimeout(r, 30000));
           } else {
             await new Promise(r => setTimeout(r, 2000));
           }
@@ -212,34 +215,36 @@ export const handler = async (
 
         }
       }
-    }
 
+    }
     // ********************UPDATE DASHBOARD**********************************
     console.log("DashBoard Updated: ", currentDate, " commentedVideos:", commentedVideos)
     await prismadbbot.botDashboard.update({
       where: { Date: currentDate },
       data: {
         commentedVideos: commentedVideos,
+        lastCommentDate: new Date()
       }
     })
     // ********************UPDATE DASHBOARD*********************************
-
-
-  } catch (error: any) {
+    
+  } catch (error) {
     console.log("Error: ", error.message)
+    await prismadbbot.$disconnect()
     return {
       statusCode: 400,
       body: JSON.stringify({ error: error.message }),
     }
   }
 
+  await prismadbbot.$disconnect()
   return {
     statusCode: 200,
-    body: JSON.stringify(true),
+    body: JSON.stringify({ currentDate: new Date(), commentedVideos }),
   }
 
 
-  async function getListCount(totalSeconds: string) {
+  async function getListCount(totalSeconds) {
     if (+totalSeconds < 180) { //menor que 3 minutos
       return 3
     } else if (+totalSeconds >= 180 && +totalSeconds < 300) { //entre 3minutos e 5 minutos
@@ -259,7 +264,7 @@ export const handler = async (
     }
   }
 
-  async function getAiModel(tokensCount: number) {
+  async function getAiModel(tokensCount) {
     if (tokensCount < 3500) {
       return "gpt-3.5-turbo-0613"
     } else if (tokensCount >= 3500 && tokensCount < 15000) {
@@ -270,7 +275,7 @@ export const handler = async (
     }
   }
 
-  async function countTokens(text: string, type: "input" | "output") {
+  async function countTokens(text, type) {
     if (type === "input") {
       text.concat()
       let context = [
@@ -334,11 +339,11 @@ export const handler = async (
     }
   }
 
-  async function formatVideoData(data: any): Promise<string> {
+  async function formatVideoData(data) {
     const { highlights, videoReview } = data;
     let formattedChapters = '';
 
-    highlights.forEach((chapter: any, index: any) => {
+    highlights.forEach((chapter, index) => {
       const { timestamp, highlight } = chapter;
       const formattedChapter = `${timestamp} ${highlight}`;
 
@@ -347,7 +352,7 @@ export const handler = async (
 
     const reviewSection = `Review:\n${videoReview}`;
 
-    return `Yess, AI Chad summarized the video for you:\n${formattedChapters}\n${reviewSection}\n\nThanks Chad ;)`;
+    return `${formattedChapters}\n${reviewSection}\n\nAI Chad reviewed the video for you ;)`;
   }
 
   async function setYoutubeClient() {
@@ -359,7 +364,7 @@ export const handler = async (
     let actualToken = tokenData?.actualToken
     let refreshToken = tokenData?.refreshToken
 
-    if (+expireData! < Date.now()) {
+    if (+expireData < Date.now()) {
       console.log("token expired, renew process started")
       const setCredentials = await client.setCredentials({
         refresh_token: refreshToken,
@@ -390,7 +395,7 @@ export const handler = async (
     }
   }
 
-  async function makeComment(comment: string, videoID: string) {
+  async function makeComment(comment, videoID) {
     // YOUTUBE COMMENT
     const youtubeClient = google.youtube({
       version: 'v3',
@@ -425,7 +430,7 @@ export const handler = async (
     }
   }
 
-  async function convertSecondsToMinutesAndSeconds(timeInSeconds: string) {
+  async function convertSecondsToMinutesAndSeconds(timeInSeconds) {
     const minutes = Math.floor(+timeInSeconds / 60);
     const seconds = +timeInSeconds % 60;
     const formattedMinutes = String(minutes);

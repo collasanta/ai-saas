@@ -19,12 +19,6 @@ functions:
           path: /bot/getlastvideos
           method: post
           private: true
-  
-  # bot-get-last-videos-cron:
-  #   handler: src/bot-get-last-videos-cron.cron
-  #   events:
-  #     # Invoke Lambda function every minute
-  #     - schedule: cron(0 */4 * * ? *)
 
   bot-comment-videos:
     handler: src/bot-comment-videos.handler
@@ -32,16 +26,19 @@ functions:
       - http:
           path: /bot/commentvideos
           method: post
-          private: true
+          private: true          	
 
-  # bot-comment-video-cron:
-  #   handler: src/bot-comment-video-cron.cron
-  #   events:
-  #     # Invoke Lambda function every minute
-  #     - schedule: cron(0 4/4 * * ? *)
+  bot-comment-video-cron:
+    handler: src/bot-comment-video-cron.cron
+    events:
+      # Invoke Lambda function every minute
+      - schedule: rate(1 hour)
 
 useDotenv: true
 
+    
 plugins:
-  - serverless-plugin-typescript
+  # - serverless-plugin-typescript
+  # - serverless-esbuild
   - serverless-offline
+

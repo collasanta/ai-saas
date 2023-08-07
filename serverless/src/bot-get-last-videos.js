@@ -1,11 +1,8 @@
-// @ts-nocheck
-import { APIGatewayProxyEvent } from 'aws-lambda'
-import { prismadbbot } from './database'
 import { Innertube } from 'youtubei.js';
+import { PrismaClient } from '@prisma/client'
+const prismadbbot = new PrismaClient()
 
-export const handler = async (
-  event: APIGatewayProxyEvent
-) => {
+export const handler = async (event) => {
   const youtube = await Innertube.create();
   const currentDate = new Date();
   const channels = await prismadbbot.botChannels.findMany()
@@ -87,6 +84,7 @@ export const handler = async (
   })
   // ********************UPDATE DASHBOARD**********************************
   console.log("Finish: ", "scannedVideos: ", scannedVideos, ", videosSaved", videosSaved)
+  await prismadbbot.$disconnect()
   return {
     statusCode: 200,
     body: JSON.stringify({ scannedVideos, videosSaved }),
