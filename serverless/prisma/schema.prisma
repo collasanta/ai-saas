@@ -18,9 +18,9 @@ model BotChannels {
 model BotVideos {
   id    Int    @id @default(sequence())
   videoID String @unique
-  videoName String 
-  videoChannel String 
-  videoLenght Int
+  videoName String? 
+  videoChannel String? 
+  videoLenght Int @default(0)
   videoComment String @default("")
   createdAt DateTime @default(now())
   status String  @default("false")
@@ -33,14 +33,15 @@ model BotVideos {
 model BotDashboard {
   id  Int    @id @default(sequence())
   Date String @unique
-  scannedVideos Int 
-  commentedVideos Int
+  cronRuns Int @default(0)
+  scannedVideos Int @default(0)
+  savedVideos Int @default(0)
+  commentedVideos Int @default(0)
   scanRuns Int @default(0)
   commentRuns Int @default(0)
-  pageViewFromYoutube  Int
+  pageViewFromYoutube  Int @default(0)
   lastScanDate DateTime?
   lastCommentDate DateTime? 
-  cronRuns Int @default(0)
 }
 
 model youtubeOathTokens {

@@ -23,13 +23,14 @@ export const handler = async (
   event
 ) => {
   let commentedVideos = 0
+  const currentDate = new Date().toISOString().split('T')[0];
+  
   try {
     const { doComments } = JSON.parse(event.body)
     if (doComments) {
       await setYoutubeClient()
     }
     //LOG INICIAL
-    const currentDate = new Date().toISOString().split('T')[0];
     await prismadbbot.botDashboard.upsert({
       update: {
         commentRuns: { increment: 1 },
@@ -101,7 +102,7 @@ export const handler = async (
         const listItemsCount = await getListCount(`${videoInfos.videoDetails.lengthSeconds}`)
         const tokensCount = await countTokens(formattedSubtitles, "input")
         const aiModel = await getAiModel(tokensCount)
-        const prompt = `Analyze and interpret this video: ${formattedSubtitles},  and create maximum ${listItemsCount + 2} highlights for it, each highlight description must not surpass 14 words, Also create a one paragraph review of the video content`
+        const prompt = `Analyze and interpret this video: ${formattedSubtitles},  and create maximum ${listItemsCount} highlights for it, each highlight description must not surpass 14 words, Also create a one paragraph review of the video content`
         let Functions = [
           {
             "name": "video_interpreter",
@@ -204,8 +205,8 @@ export const handler = async (
 
           console.log(" ")
           if (video.status === "generated") {
-            console.log("await 30sec... between comment api calls")
-            await new Promise(r => setTimeout(r, 30000));
+            console.log("await 1 minute... between comment api calls")
+            await new Promise(r => setTimeout(r, 120000));
           } else {
             await new Promise(r => setTimeout(r, 2000));
           }
@@ -222,7 +223,6 @@ export const handler = async (
     await prismadbbot.botDashboard.update({
       where: { Date: currentDate },
       data: {
-        commentedVideos: commentedVideos,
         lastCommentDate: new Date()
       }
     })
@@ -350,9 +350,9 @@ export const handler = async (
       formattedChapters += `${formattedChapter}\n`;
     });
 
-    const reviewSection = `Review:\n${videoReview}`;
+    const reviewSection = `\n${videoReview}`;
 
-    return `${formattedChapters}\n${reviewSection}\n\nAI Chad reviewed the video for you ;)`;
+    return `${formattedChapters}\n${reviewSection}`;
   }
 
   async function setYoutubeClient() {
@@ -422,6 +422,19 @@ export const handler = async (
         data: {
           status: "commented",
         }
+      })
+      await prismadbbot.botDashboard.upsert({
+        update: {
+          commentedVideos: { increment: 1 },
+        },
+        create: {
+          Date: currentDate,
+          commentRuns: 1,
+          scannedVideos: 0,
+          commentedVideos: 1,
+          pageViewFromYoutube: 0,
+        },
+        where: { Date: currentDate },
       })
       return true
     } else {

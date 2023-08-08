@@ -10,7 +10,10 @@ provider:
         value: ${env:MY_API_KEY}
   runtime: nodejs16.x
   timeout: 900 
-
+  memorySize: 512
+  environment:
+    DATABASE_URL: ${env:DATABASE_URL}
+    
 functions:
   bot-get-last-videos:
     handler: src/bot-get-last-videos.handler
@@ -20,16 +23,26 @@ functions:
           method: post
           private: true
 
+
   bot-comment-videos:
     handler: src/bot-comment-videos.handler
+    environment:
+      OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+      YT_CLIENT_ID: ${env:YT_CLIENT_ID}
+      YT_CLIENT_SECRET: ${env:YT_CLIENT_SECRET}
+      YT_REDIRECT_URL: ${env:YT_REDIRECT_URL}
     events:
       - http:
           path: /bot/commentvideos
           method: post
           private: true          	
 
-  bot-comment-video-cron:
-    handler: src/bot-comment-video-cron.cron
+  bot-cron:
+    handler: src/bot-cron.cron
+    environment:
+      MY_API_KEY: ${env:MY_API_KEY}
+      BOT_COMMENT_VIDEOS_URL: ${env:BOT_COMMENT_VIDEOS_URL}
+      BOT_GET_LAST_VIDEOS_URL: ${env:BOT_GET_LAST_VIDEOS_URL}
     events:
       # Invoke Lambda function every minute
       - schedule: rate(1 hour)

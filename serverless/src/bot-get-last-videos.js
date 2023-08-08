@@ -69,6 +69,7 @@ export const handler = async (event) => {
     update: {
       scannedVideos: { increment: scannedVideos },
       scanRuns: { increment: 1 },
+      savedVideos: { increment: videosSaved },
       lastScanDate: currentDate,
     },
     where: { Date: currentDateFormatted },
@@ -76,6 +77,7 @@ export const handler = async (event) => {
       Date: currentDateFormatted,
       scanRuns: 1,
       scannedVideos: scannedVideos,
+      savedVideos: videosSaved,
       commentedVideos: 0,
       commentRuns: 0,
       pageViewFromYoutube: 0,
