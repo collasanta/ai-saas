@@ -19,12 +19,48 @@ const client = new google.auth.OAuth2(
   process.env.YT_REDIRECT_URL
 );
 
+let Functions = [
+  {
+    "name": "video_interpreter",
+    "description": `This functions takes a youtube video transcript and creates highlights containing the main points of the whole video. It also creates a one paragraph review of the video content.`,
+    "parameters": {
+      // SCHEMA:
+      "type": "object",
+      "properties": {
+        "highlights": {
+          "type": "array",
+          "description": `An array of objects containing the highlights for the main points of the given video.`,
+          "items": {
+            "type": "object",
+            "description": "this object contains the timestamp and the content of the highlight",
+            "properties": {
+              "timestamp": {
+                "type": "string",
+                "description": "format of minutes:seconds (mm:ss)",
+              },
+              "highlight": {
+                "type": "string",
+                "description": "A highlight description",
+              }
+            }
+          },
+        },
+        "videoReview": {
+          "type": "string",
+          "description": "A one paragraph review of the content of the video"
+        },
+      },
+      "required": ["chapters", "videoReview"]
+    }
+  }
+]
+
 export const handler = async (
   event
 ) => {
   let commentedVideos = 0
   const currentDate = new Date().toISOString().split('T')[0];
-  
+
   try {
     const { doComments } = JSON.parse(event.body)
     if (doComments) {
@@ -52,19 +88,22 @@ export const handler = async (
         }
       }
     });
+
     console.log("videos Pulled: ", videos.length)
+
     for (const video of videos) {
       if (video.status === "fetched") {
         console.log("START GENERATION - videoID: ", video.videoID)
         const videoInfos = await yt.info(video.videoID);
-        if (videoInfos.player_response.captions.playerCaptionsTracklistRenderer === undefined) {
-          await prismadbbot.botVideos.update({
-            where: { id: video.id },
-            data: {
-              status: "noSubtitles"
-            }
-          })
-          console.log("noSubtitles found for this video")
+        if ( !videoInfos.player_response.captions ||
+          !videoInfos.player_response.captions.playerCaptionsTracklistRenderer) {
+          // await prismadbbot.botVideos.update({
+          //   where: { id: video.id },
+          //   data: {
+          //     status: "noSubtitles"
+          //   }
+          // })
+          console.log("noSubtitles found for this video: ", video.videoID)
           continue
         }
         let captions = videoInfos.player_response.captions.playerCaptionsTracklistRenderer.captionTracks
@@ -102,42 +141,7 @@ export const handler = async (
         const listItemsCount = await getListCount(`${videoInfos.videoDetails.lengthSeconds}`)
         const tokensCount = await countTokens(formattedSubtitles, "input")
         const aiModel = await getAiModel(tokensCount)
-        const prompt = `Analyze and interpret this video: ${formattedSubtitles},  and create maximum ${listItemsCount} highlights for it, each highlight description must not surpass 14 words, Also create a one paragraph review of the video content`
-        let Functions = [
-          {
-            "name": "video_interpreter",
-            "description": `This functions takes a youtube video transcript and creates highlights containing the main points of the whole video. It also creates a one paragraph review of the video content.`,
-            "parameters": {
-              // SCHEMA:
-              "type": "object",
-              "properties": {
-                "highlights": {
-                  "type": "array",
-                  "description": `An array of objects containing the highlights for the main points of the given video.`,
-                  "items": {
-                    "type": "object",
-                    "description": "this object contains the timestamp and the content of the highlight",
-                    "properties": {
-                      "timestamp": {
-                        "type": "string",
-                        "description": "format of minutes:seconds (mm:ss)",
-                      },
-                      "highlight": {
-                        "type": "string",
-                        "description": "A highlight description",
-                      }
-                    }
-                  },
-                },
-                "videoReview": {
-                  "type": "string",
-                  "description": "A one paragraph review of the content of the video"
-                },
-              },
-              "required": ["chapters", "videoReview"]
-            }
-          }
-        ]
+        const prompt = `Analyze and interpret this video: ${formattedSubtitles},  and create a list with a maximum of ${listItemsCount} highlights for it, each highlight description must not surpass 14 words, Also create a one paragraph review of the video content`
 
         console.log("--Calling OpenAi")
         const dateStart = new Date()
@@ -183,38 +187,13 @@ export const handler = async (
           }
         })
 
-        if (doComments) {
-          const makeCommentResponse = await makeComment(finalText, video.videoID)
-          if (makeCommentResponse) {
-            commentedVideos++
-            console.log("--successful commented video: ", video.videoID)
-            console.log(" ")
-          } else {
-            console.log("--error commenting video: ", video.videoID)
-            console.log(" ")
+        // MAKE COMMENT
+        doComments && await makeComment(finalText, video.videoID)
 
-          }
-        }
         continue
       } else if (video.status === "generated") {
-        const makeCommentResponse = await makeComment(video.videoComment, video.videoID)
-        if (makeCommentResponse) {
-          commentedVideos++
-          console.log("--successful commented video: ", video.videoID)
-          console.log(" ")
-
-          console.log(" ")
-          if (video.status === "generated") {
-            console.log("await 1 minute... between comment api calls")
-            await new Promise(r => setTimeout(r, 120000));
-          } else {
-            await new Promise(r => setTimeout(r, 2000));
-          }
-        } else {
-          console.log("--error commenting video: ", video.videoID)
-          console.log(" ")
-
-        }
+        // MAKE COMENT
+        doComments && await makeComment(video.videoComment, video.videoID)
       }
 
     }
@@ -227,9 +206,9 @@ export const handler = async (
       }
     })
     // ********************UPDATE DASHBOARD*********************************
-    
+
   } catch (error) {
-    console.log("Error: ", error.message)
+    console.log("Error: ", error)
     await prismadbbot.$disconnect()
     return {
       statusCode: 400,
@@ -238,6 +217,7 @@ export const handler = async (
   }
 
   await prismadbbot.$disconnect()
+
   return {
     statusCode: 200,
     body: JSON.stringify({ currentDate: new Date(), commentedVideos }),
@@ -352,7 +332,7 @@ export const handler = async (
 
     const reviewSection = `\n${videoReview}`;
 
-    return `${formattedChapters}\n${reviewSection}`;
+    return `${formattedChapters}${reviewSection}`;
   }
 
   async function setYoutubeClient() {
@@ -436,20 +416,15 @@ export const handler = async (
         },
         where: { Date: currentDate },
       })
+      commentedVideos++
+      console.log("--successful commented video: ", videoID)
+      console.log("-------awaiting 2min after youtube comment------")
+      await new Promise(r => setTimeout(r, 120000));
       return true
     } else {
       console.log("error in youtube api comment: ", responseYoutubeApiComment)
       return false
     }
-  }
-
-  async function convertSecondsToMinutesAndSeconds(timeInSeconds) {
-    const minutes = Math.floor(+timeInSeconds / 60);
-    const seconds = +timeInSeconds % 60;
-    const formattedMinutes = String(minutes);
-    const formattedSeconds = String(seconds).padStart(2, '0');
-    const formattedTime = `${formattedMinutes}:${formattedSeconds}`;
-    return formattedTime;
   }
 
 }

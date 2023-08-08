@@ -10,13 +10,13 @@ provider:
         value: ${env:MY_API_KEY}
   runtime: nodejs16.x
   timeout: 900 
-  memorySize: 512
   environment:
     DATABASE_URL: ${env:DATABASE_URL}
     
 functions:
   bot-get-last-videos:
     handler: src/bot-get-last-videos.handler
+    memorySize: 300
     events:
       - http:
           path: /bot/getlastvideos
@@ -26,6 +26,7 @@ functions:
 
   bot-comment-videos:
     handler: src/bot-comment-videos.handler
+    memorySize: 400
     environment:
       OPENAI_API_KEY: ${env:OPENAI_API_KEY}
       YT_CLIENT_ID: ${env:YT_CLIENT_ID}
@@ -39,6 +40,7 @@ functions:
 
   bot-cron:
     handler: src/bot-cron.cron
+    memorySize: 200
     environment:
       MY_API_KEY: ${env:MY_API_KEY}
       BOT_COMMENT_VIDEOS_URL: ${env:BOT_COMMENT_VIDEOS_URL}
