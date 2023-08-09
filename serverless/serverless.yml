@@ -1,18 +1,18 @@
 app: serverless-chadchapters
 service: serverless-chadchapters
-frameworkVersion: '3'
+frameworkVersion: "3"
 
 provider:
   name: aws
   apiGateway:
-      apiKeys:
+    apiKeys:
       - name: apiKey
         value: ${env:MY_API_KEY}
   runtime: nodejs16.x
-  timeout: 900 
+  timeout: 900
   environment:
     DATABASE_URL: ${env:DATABASE_URL}
-    
+
 functions:
   bot-get-last-videos:
     handler: src/bot-get-last-videos.handler
@@ -22,7 +22,6 @@ functions:
           path: /bot/getlastvideos
           method: post
           private: true
-
 
   bot-comment-videos:
     handler: src/bot-comment-videos.handler
@@ -36,7 +35,16 @@ functions:
       - http:
           path: /bot/commentvideos
           method: post
-          private: true          	
+          private: true
+
+  bot-get-bot-info:
+    handler: src/bot-get-bot-info.handler
+    memorySize: 400
+    events:
+      - http:
+          path: /bot/dashdata
+          method: get
+          private: true
 
   bot-cron:
     handler: src/bot-cron.cron
@@ -47,13 +55,18 @@ functions:
       BOT_GET_LAST_VIDEOS_URL: ${env:BOT_GET_LAST_VIDEOS_URL}
     events:
       # Invoke Lambda function every minute
-      - schedule: rate(1 hour)
+      - schedule: rate(30 minutes)
+
+package:
+  patterns:
+    - '!node_modules/@prisma/engines'
+    - '!node_modules/prisma'
+    - '!node_modules/.prisma/**/libquery_engine-*'
+    - 'node_modules/.prisma/**/libquery_engine-rhel-openssl-1.0.x.so.node'
 
 useDotenv: true
 
-    
 plugins:
   # - serverless-plugin-typescript
   # - serverless-esbuild
   - serverless-offline
-

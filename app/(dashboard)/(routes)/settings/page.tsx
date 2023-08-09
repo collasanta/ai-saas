@@ -6,7 +6,6 @@ import { checkSubscription } from "@/lib/subscription";
 import { Settings } from "lucide-react";
 
 const SettingsPage = async () => {
-    const isPro = await checkSubscription()
     const apiLimitCount = await getApiLimitCount()
     const apiLimit = await getApiLimit()
     return (

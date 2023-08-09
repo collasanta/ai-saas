@@ -5,6 +5,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "clean": "npx del-cli \"node_modules/**/@types/**\" && npx del-cli \"node_modules/**/*.d.ts\" && npx del-cli \"node_modules/**/.yarn-integrity\" && npx del-cli \"node_modules/**/.bin\"",
     "dev": "npx serverless offline",
     "predeploy": "npx prisma generate",
     "deploy": "npx serverless deploy --verbose"

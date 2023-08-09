@@ -334,9 +334,11 @@ export const handler = async (
       formattedChapters += `${formattedChapter}\n`;
     });
 
-    const reviewSection = `\n${videoReview}`;
+    const reviewSection = `\n${videoReview}\n`;
 
-    return `${formattedChapters}${reviewSection}`;
+    const thanksMessage = `\nChapter for your videos in seconds, AI generated ;)\n`;
+
+    return `${formattedChapters}${reviewSection}${thanksMessage}`;
   }
 
   async function setYoutubeClient() {
@@ -386,19 +388,24 @@ export const handler = async (
       auth: client,
     });
 
-    const responseYoutubeApiComment = await youtubeClient.commentThreads.insert({
-      part: 'snippet',
-      requestBody: {
-        snippet: {
-          videoId: videoID,
-          topLevelComment: {
-            snippet: {
-              textOriginal: comment,
+    let responseYoutubeApiComment
+    try {
+      responseYoutubeApiComment = await youtubeClient.commentThreads.insert({
+        part: 'snippet',
+        requestBody: {
+          snippet: {
+            videoId: videoID,
+            topLevelComment: {
+              snippet: {
+                textOriginal: comment,
+              },
             },
           },
         },
-      },
-    });
+      });
+    } catch (error) {
+      console.log("error on make comment video:", videoID, " error:", error)
+    }
 
     if (responseYoutubeApiComment.status === 200) {
       await prismadbbot.botVideos.update({

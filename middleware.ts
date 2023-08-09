@@ -7,7 +7,7 @@ import { env } from "process";
 // See https://clerk.com/docs/nextjs/middleware for more information about configuring your middleware
 
 export default authMiddleware({
-    publicRoutes:["/"],
+    publicRoutes:["/", "/bot"],
 });
 
 export const config = {
