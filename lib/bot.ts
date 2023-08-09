@@ -5,7 +5,7 @@ const endpointURL = 'https://02hi27trbk.execute-api.us-east-1.amazonaws.com/dev/
 
 export const getBotDashboardData = async () => {
   try {
-    console.log("Cron: start botGetLastVideosUrl api call")
+    console.log("api call")
     const botGetLastVideosUrlCall = await fetch(endpointURL,
       {
         method: 'GET', headers: { 'x-api-key': apiKey },

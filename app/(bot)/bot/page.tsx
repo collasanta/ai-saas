@@ -57,27 +57,29 @@ const BotPage = async () => {
   const botDashData = await getBotDashboardData()
   console.log(botDashData, "front")
   return (
-    <Table className="text-center">
-      <TableCaption>Bot Dashboard.</TableCaption>
+    <div className="text-center mt-[20px]">
+      Bot Dashboard
+    <Table className="mx-auto text-center max-w-[500px] border border-black mt-[5px]">
       <TableHeader className="bg-secondary">
         <TableRow className="text-center font-bold">
           <TableHead className="p-12">Data</TableHead>
-          <TableHead className="">PV</TableHead>
-          <TableHead className="">CRON</TableHead>
-          <TableHead className="">comments</TableHead>
+          <TableHead className=" text-center">PV</TableHead>
+          <TableHead className="text-center">CRON</TableHead>
+          <TableHead className="text-center">comments</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {botDashData.map((botDashData:any) => (
-          <TableRow key={botDashData.Date}>
-            <TableCell className="font-medium w-[90px]">{botDashData.Date}</TableCell>
-            <TableCell>{botDashData.pageViewFromYoutube}</TableCell>
-            <TableCell>{botDashData.cronRuns}</TableCell>
-            <TableCell className="">{botDashData.commentedVideos}</TableCell>
+          <TableRow className="text-center" key={botDashData.Date}>
+            <TableCell className="font-medium w-[90px] text-center">{botDashData.Date}</TableCell>
+            <TableCell className="text-center">{botDashData.pageViewFromYoutube}</TableCell>
+            <TableCell className="text-center">{botDashData.cronRuns}</TableCell>
+            <TableCell className="text-center">{botDashData.commentedVideos}</TableCell>
           </TableRow>
         ))}
       </TableBody>
     </Table>
+    </div>
   )
 }
 
