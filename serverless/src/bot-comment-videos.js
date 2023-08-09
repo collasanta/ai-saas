@@ -199,12 +199,16 @@ export const handler = async (
     }
     // ********************UPDATE DASHBOARD**********************************
     console.log("DashBoard Updated: ", currentDate, " commentedVideos:", commentedVideos)
-    await prismadbbot.botDashboard.update({
+    await prismadbbot.botDashboard.upsert({
       where: { Date: currentDate },
-      data: {
-        lastCommentDate: new Date()
+      update: {
+        lastCommentDate:  new Date()
+      },
+      create: {
+        Date: currentDate,
+        lastCommentDate:  new Date()
       }
-    })
+    });
     // ********************UPDATE DASHBOARD*********************************
 
   } catch (error) {

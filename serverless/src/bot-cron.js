@@ -9,12 +9,17 @@ export const cron = async () => {
   const botGetLastVideosUrl = process.env.BOT_GET_LAST_VIDEOS_URL
   console.log({apiKey, botCommentVideosUrl, botGetLastVideosUrl})
   console.log("updating dashboard")
-  await prismadbbot.botDashboard.update({
+  
+  await prismadbbot.botDashboard.upsert({
     where: { Date: new Date().toISOString().split('T')[0] },
-    data: {
+    update: {
       cronRuns: { increment: 1 }
+    },
+    create: {
+      Date: new Date().toISOString().split('T')[0],
+      cronRuns: 1
     }
-  })
+  });
 
   try {
     console.log("Cron: start botGetLastVideosUrl api call")
@@ -42,12 +47,10 @@ export const cron = async () => {
   if (videosToComment.length > 0) {
     try {
       console.log("Cron: start botCommentVideos api call")
-      const botCommentVideosUrlCall = await fetch(botCommentVideosUrl,
+      const botCommentVideosUrlCall = fetch(botCommentVideosUrl,
          { method: 'POST', headers: { 'x-api-key': apiKey },
           body: JSON.stringify({ doComments: true })
           });
-      const json = await botCommentVideosUrlCall.json();
-      console.log(json);
     } catch (err) {
       console.error('botCommentVideos api call error:', err.message);
     }
