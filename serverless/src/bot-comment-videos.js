@@ -336,9 +336,7 @@ export const handler = async (
 
     const reviewSection = `\n${videoReview}\n`;
 
-    const thanksMessage = `\nWant to add the channels you watch for me to comment on every new video? send me here and i will do it for you ;)\n`;
-
-    return `${formattedChapters}${reviewSection}${thanksMessage}`;
+    return `${formattedChapters}${reviewSection}`;
   }
 
   async function setYoutubeClient() {

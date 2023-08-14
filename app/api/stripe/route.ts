@@ -45,7 +45,7 @@ export async function GET() {
                             description:"Add 1000 credits (ONE TIME PAYMENT)",
                             images:["https://chadchapters.com/logo.png"],
                         },
-                        unit_amount: 60,
+                        unit_amount: 600,
                     },
                     quantity: 1,
                 }

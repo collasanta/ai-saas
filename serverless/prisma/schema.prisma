@@ -46,7 +46,8 @@ model BotDashboard {
 
 model youtubeOathTokens {
   id  Int    @id @default(sequence())
-  refreshToken String @unique
-  actualToken String 
-  expireData String
+  account String?
+  refreshToken String? 
+  actualToken String? 
+  expireData String?
 }
