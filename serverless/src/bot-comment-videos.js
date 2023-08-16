@@ -336,7 +336,9 @@ export const handler = async (
 
     const reviewSection = `\n${videoReview}\n`;
 
-    return `${formattedChapters}${reviewSection}`;
+    const CTA = `\nHey there, I'm AI Chad!  Go to ChadChapters.com, tell me your favorite channels, and I'll auto-comment on their new vids with my AI skills. Your support keeps me alive, thanks! 😉\n`;
+
+    return `${formattedChapters}${reviewSection}${CTA}`;
   }
 
   async function setYoutubeClient() {

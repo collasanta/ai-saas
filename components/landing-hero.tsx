@@ -34,9 +34,16 @@ export const LandingHero = () => {
           Stop wasting time and go straight to what matters
         </div>
         <div>
+        <Link href={"https://fg51g04uqyz.typeform.com/to/bPqZ1ueS"}>
+            <Button variant="red" className="md:text-lg p-4 md:p-6 rounded-full font-semibold">
+              Add your channels to the Bot
+            </Button>
+          </Link>
+        </div>
+        <div>
           <Link href={isSignedIn ? "/dashboard" : "/sign-up"}>
             <Button variant="premium" className="md:text-lg p-4 md:p-6 rounded-full font-semibold">
-              Try For Free
+              Try the App Now
             </Button>
           </Link>
         </div>
