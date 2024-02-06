@@ -86,7 +86,6 @@ export const getPrompt = async (videoInfos: IYoutubeVideoInfo): Promise<IPromptI
     console.time("getPrompt")
     const formattedSubtitles = await getFormattedSubtitles(videoInfos.videoId, videoInfos.languages!)
 
-
     const tokensCount = await countTokens(formattedSubtitles, "input")
 
     const listItemsCount: any = await getListCount(`${videoInfos.videoLenghtSeconds}`)
@@ -158,16 +157,19 @@ export const saveResponseDB = async (tokensCount: number, aiModel: string, gener
 // AUXILIAR FUNCTIONS  ///////////////////////////////////////////////////////////////////////////////////////////////////
 async function getFormattedSubtitles(videoId: string, videoLanguages: string) {
     let languagesArr = videoLanguages.split(" ")
+
     const languagesArrFiltered = languagesArr.filter((str) => str !== '');
     let selectedSub = languagesArr.find(a => a.includes("en"));
     if (!selectedSub) {
         selectedSub = languagesArr[0]
     }
-
+    // @ts-ignore
     let subs = await getSubtitles({
         videoID: videoId, // youtube video id
         lang: selectedSub // default: `en`
     })
+    console.log("t3")
+
 
     let finalTimmedSubsArr = await Promise.all(subs.map(async (sub: any) => {
         // TESTE FUTURO
