@@ -20,9 +20,6 @@ export const LandingHero = () => {
               options={{
                 strings: [
                   "In seconds",
-                  // "Photo Generation.",
-                  // "Blog Writing.",
-                  // "Mail Writing."
                 ],
                 autoStart: true,
                 loop: true,
@@ -44,7 +41,7 @@ export const LandingHero = () => {
           No credit card required.
         </div>
         <div className="mx-auto">
-        <Image width={250} height={500} alt="gif" src="/gif.gif" className="mx-auto rounded-md" />
+          <Image width={250} height={500} alt="gif" src="/gif.gif" className="mx-auto rounded-md" />
 
         </div>
 

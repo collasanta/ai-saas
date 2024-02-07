@@ -29,6 +29,7 @@ export async function GET() {
             return new NextResponse(JSON.stringify({url:stripeSession.url}))
         } 
 
+        // ONE TIME PAYMENT
         const stripeSession = await stripe.checkout.sessions.create({
             success_url: settingsUrl,
             cancel_url: settingsUrl,
@@ -53,6 +54,7 @@ export async function GET() {
             metadata:{ userId },
         })
 
+        // MONTHLY SUBSCRIPTION
         // const monthlyStripeSession = await stripe.checkout.sessions.create({
         //     success_url: settingsUrl,
         //     cancel_url: settingsUrl,

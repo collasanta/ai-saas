@@ -1,16 +1,14 @@
 import { PrismaClient } from '@prisma/client'
-const prismadbbot = new PrismaClient()
 import * as yt from 'youtube-info-streams';
-// var getSubtitles = require('youtube-captions-scraper').getSubtitles;
 import { getSubtitles } from 'youtube-captions-scraper';
 import { promptTokensEstimate } from "openai-chat-tokens";
 import { Configuration, OpenAIApi } from "openai";
+const prismadbbot = new PrismaClient()
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
 const OPENAI_GPT35_4K_USD_PER_TOKEN = 0.0000015
-// const { google } = require('googleapis');
 import { google } from 'googleapis';
 
 const client = new google.auth.OAuth2(
@@ -24,7 +22,6 @@ let Functions = [
     "name": "video_interpreter",
     "description": `This functions takes a youtube video transcript and creates highlights containing the main points of the whole video. It also creates a one paragraph review of the video content.`,
     "parameters": {
-      // SCHEMA:
       "type": "object",
       "properties": {
         "highlights": {
@@ -95,14 +92,8 @@ export const handler = async (
       if (video.status === "fetched") {
         console.log("START GENERATION - videoID: ", video.videoID)
         const videoInfos = await yt.info(video.videoID);
-        if ( !videoInfos.player_response.captions ||
+        if (!videoInfos.player_response.captions ||
           !videoInfos.player_response.captions.playerCaptionsTracklistRenderer) {
-          // await prismadbbot.botVideos.update({
-          //   where: { id: video.id },
-          //   data: {
-          //     status: "noSubtitles"
-          //   }
-          // })
           console.log("noSubtitles found for this video: ", video.videoID)
           continue
         }
@@ -116,24 +107,22 @@ export const handler = async (
           selectedSub = languagesArr[0]
         }
         let subs = await getSubtitles({
-          videoID: video.videoID, // youtube video id
-          lang: selectedSub // default: `en`
+          videoID: video.videoID,
+          lang: selectedSub
         })
 
         let finalTimmedSubsArr = await Promise.all(subs.map(async (sub) => {
-          // TESTE FUTURO
-          //AQUI ROLA UMA POSSIVEL OTIMIZACAO. COMO? DIMINUINDO A FREQUENCIA DAS TIMESTAMPS (só voltar o tempo junto qdo for impar o contador por ex)
 
           let time = await convertSecondsToMinutesAndSeconds(sub.start.split(".")[0])
           let timedsub = time + " " + sub.text
           return timedsub
           async function convertSecondsToMinutesAndSeconds(timeInSeconds) {
-            const minutes = Math.floor(+timeInSeconds / 60); // Get the number of minutes
-            const seconds = +timeInSeconds % 60; // Get the number of remaining seconds
-            const formattedMinutes = String(minutes) // Add leading zero if needed
-            const formattedSeconds = String(seconds).padStart(2, '0'); // Add leading zero if needed
-            const formattedTime = `${formattedMinutes}:${formattedSeconds}`; // Combine minutes and seconds with a colon
-            return formattedTime; // Return the formatted time
+            const minutes = Math.floor(+timeInSeconds / 60);
+            const seconds = +timeInSeconds % 60;
+            const formattedMinutes = String(minutes)
+            const formattedSeconds = String(seconds).padStart(2, '0');
+            const formattedTime = `${formattedMinutes}:${formattedSeconds}`;
+            return formattedTime;
           }
         }))
 
@@ -187,29 +176,25 @@ export const handler = async (
           }
         })
 
-        // MAKE COMMENT
         doComments && await makeComment(finalText, video.videoID)
 
         continue
       } else if (video.status === "generated") {
-        // MAKE COMENT
         doComments && await makeComment(video.videoComment, video.videoID)
       }
 
     }
-    // ********************UPDATE DASHBOARD**********************************
     console.log("DashBoard Updated: ", currentDate, " commentedVideos:", commentedVideos)
     await prismadbbot.botDashboard.upsert({
       where: { Date: currentDate },
       update: {
-        lastCommentDate:  new Date()
+        lastCommentDate: new Date()
       },
       create: {
         Date: currentDate,
-        lastCommentDate:  new Date()
+        lastCommentDate: new Date()
       }
     });
-    // ********************UPDATE DASHBOARD*********************************
 
   } catch (error) {
     console.log("Error: ", error)
@@ -343,7 +328,6 @@ export const handler = async (
 
   async function setYoutubeClient() {
     console.log("setting youtube client")
-    // GET TOKENS
     let tokenData = await prismadbbot.youtubeOathTokens.findFirst({
     })
     let expireData = tokenData?.expireData
@@ -382,7 +366,6 @@ export const handler = async (
   }
 
   async function makeComment(comment, videoID) {
-    // YOUTUBE COMMENT
     const youtubeClient = google.youtube({
       version: 'v3',
       auth: client,

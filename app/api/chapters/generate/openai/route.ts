@@ -12,8 +12,8 @@ export const runtime = 'edge'
 export async function POST(req: Request) {
   console.time("OpenAI API rout full time")
   const promptInfos: IPromptInfos = await req.json()
-  
-  
+
+
   const prompt = `Analyze and interpret this video: ${promptInfos.formattedSubtitles}`
 
   let Functions = [
@@ -21,7 +21,6 @@ export async function POST(req: Request) {
       "name": "video_interpreter",
       "description": "This functions takes a video and creates a list of chapters, a video review, and a list of keywords based on the video.",
       "parameters": {
-        // SCHEMA:
         "type": "object",
         "properties": {
           "chapters": {
@@ -68,13 +67,11 @@ export async function POST(req: Request) {
     function_call: { name: "video_interpreter" }
   })
 
-  // let GPTResponse
+
   const stream = OpenAIStream(response, {
     onCompletion: async (completion: string) => {
       console.timeEnd("OpenAI API rout full time")
-      // const transformToJson = await JSON.parse(completion)
-      // GPTResponse = transformToJson.function_call.arguments
-      // console.log({ GPTResponse })
+
     }
   })
   return new StreamingTextResponse(stream)

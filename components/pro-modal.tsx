@@ -34,13 +34,7 @@ const benefits = [
         icon: Coins,
         color: "text-yellow-500",
         bgColor: "bg-yellow-500/10",
-    },
-    // {
-    //     label: "100 Generations",
-    //     icon: MessageSquare,
-    //     color: "text-emerald-500",
-    //     bgColor: "bg-emerald-500/10",
-    // },
+    }
 ]
 
 export const ProModal = () => {
@@ -48,15 +42,15 @@ export const ProModal = () => {
     const [loading, setLoading] = useState(false)
 
     const onSubscribe = async () => {
-    try {
-        setLoading(true)
-        const response = await axios.get("/api/stripe")
-        window.location.href = (response).data.url
-    } catch(error){
-        console.log(error)
-    } finally{
-        setLoading(false)
-    }
+        try {
+            setLoading(true)
+            const response = await axios.get("/api/stripe")
+            window.location.href = (response).data.url
+        } catch (error) {
+            console.log(error)
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -75,7 +69,7 @@ export const ProModal = () => {
                         {benefits.map((benefit) => (
                             <Card
                                 key={benefit.label}
-                                className="p-3 border-black/5 flex items-center justify-between"                                
+                                className="p-3 border-black/5 flex items-center justify-between"
                             >
                                 <div className="flex items-center gap-x-4">
                                     <div className={cn("p-2 w-fit rounded-md", benefit.bgColor)}>
@@ -91,8 +85,8 @@ export const ProModal = () => {
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter >
-                    <Button  onClick={onSubscribe} disabled={loading} variant="premium" size="lg" className="w-full"> 
-                    Buy Credits
+                    <Button onClick={onSubscribe} disabled={loading} variant="premium" size="lg" className="w-full">
+                        Buy Credits
                         <Zap className="w-4 h-4 ml-2 fill-white" />
                     </Button>
                 </DialogFooter>

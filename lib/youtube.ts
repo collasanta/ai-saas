@@ -8,7 +8,6 @@ import { auth } from "@clerk/nextjs"
 import { promptTokensEstimate } from "openai-chat-tokens";
 import { OPENAI_GPT35_16K_USD_PER_TOKEN, OPENAI_GPT35_4K_USD_PER_TOKEN } from '@/constants';
 
-//INTERFACES  ///////////////////////////////////////////////////////////////////////////////////////////////////
 export interface IYoutubeVideoInfo {
     languages: string | null;
     videoLenghtSeconds: number;
@@ -38,7 +37,6 @@ export interface GPTResponse {
     keywords: string[];
 }
 
-// SERVER ACTIONS ///////////////////////////////////////////////////////////////////////////////////////////////////
 export const getYoutubeVideoInfos = async (url: string): Promise<IYoutubeVideoInfo> => {
     console.log("getYoutubeVideoInfos")
     console.time("getYoutubeVideoInfos")
@@ -172,19 +170,16 @@ async function getFormattedSubtitles(videoId: string, videoLanguages: string) {
 
 
     let finalTimmedSubsArr = await Promise.all(subs.map(async (sub: any) => {
-        // TESTE FUTURO
-        //AQUI ROLA UMA POSSIVEL OTIMIZACAO. COMO? DIMINUINDO A FREQUENCIA DAS TIMESTAMPS (só voltar o tempo junto qdo for impar o contador por ex)
-
         let time = await convertSecondsToMinutesAndSeconds(sub.start.split(".")[0])
         let timedsub = time + " " + sub.text
         return timedsub
         async function convertSecondsToMinutesAndSeconds(timeInSeconds: string) {
-            const minutes = Math.floor(+timeInSeconds / 60); // Get the number of minutes
-            const seconds = +timeInSeconds % 60; // Get the number of remaining seconds
-            const formattedMinutes = String(minutes) // Add leading zero if needed
-            const formattedSeconds = String(seconds).padStart(2, '0'); // Add leading zero if needed
-            const formattedTime = `${formattedMinutes}:${formattedSeconds}`; // Combine minutes and seconds with a colon
-            return formattedTime; // Return the formatted time
+            const minutes = Math.floor(+timeInSeconds / 60); 
+            const seconds = +timeInSeconds % 60; 
+            const formattedMinutes = String(minutes) 
+            const formattedSeconds = String(seconds).padStart(2, '0'); 
+            const formattedTime = `${formattedMinutes}:${formattedSeconds}`; 
+            return formattedTime; 
         }
     }))
 
