@@ -1,4 +1,4 @@
-**🌟 AI YouTube videos digestion tool! 🌟** ttps://www.chadchapters.com
+**🌟 AI YouTube videos digestion tool! 🌟** https://www.chadchapters.com
 
 🚀 This project leverages OpenAI and YouTube APIs to obtain concise summaries, chapters, and keywords for YouTube videos.
 
