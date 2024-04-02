@@ -1,8 +1,8 @@
 'use server'
-import * as yt from 'youtube-info-streams';
 import getVideoId from 'get-video-id';
 import { uid } from 'uid';
-var getSubtitles = require('youtube-captions-scraper').getSubtitles;
+const getSubtitles = require('youtube-captions-scraper').getSubtitles;
+const ytv = require("ytv");
 import prismadb from './prismadb';
 import { auth } from "@clerk/nextjs"
 import { promptTokensEstimate } from "openai-chat-tokens";
@@ -48,24 +48,19 @@ export const getYoutubeVideoInfos = async (url: string): Promise<IYoutubeVideoIn
     if (id === null) {
         throw new Error('Invalid Youtube URL');
     }
-    const videoInfos = await yt.info(id);
-    const videoThumbs = videoInfos.videoDetails.thumbnail.thumbnails
-    const videoThumb = videoThumbs[videoThumbs.length - 1].url
-    const videoLenghtSeconds = videoInfos.videoDetails.lengthSeconds
+    const videoInfos = await ytv.get_info(`${url}`)
+    console.log({videoInfos})
+    const videoThumb = videoInfos.big_thumbnail
+    const videoLenght = videoInfos.video_length
+    const [minutes, seconds] = videoLenght.split(':').map(Number);
+    const videoLenghtSeconds = minutes * 60 + seconds;
     const videoLenghtFormatted = `${String(Math.floor(videoLenghtSeconds / 60)).padStart(2)}min ${String(videoLenghtSeconds % 60).padStart(2, '0')}sec`;
     const videoLengthMinutes = Math.round(videoLenghtSeconds / 60)
-    const videoTitle = videoInfos.videoDetails.title
-    const videoChannelName = videoInfos.videoDetails.ownerChannelName
-    if (videoInfos.player_response.captions.playerCaptionsTracklistRenderer === undefined) {
-        throw new Error('Sorry but we cant generate chapters for this video, try another one ;)');
-    }
-    let captions = videoInfos.player_response.captions.playerCaptionsTracklistRenderer.captionTracks
-    let languages = ""
-    let filter = captions.map((caption: any) => { languages = languages + caption.languageCode + " " })
-
+    const videoTitle = videoInfos.title
+    const videoChannelName = videoInfos.channel_name
 
     const archiveID = uid()
-    const VideoInfos = { languages, videoLenghtSeconds, videoLengthMinutes, videoLenghtFormatted, videoTitle, videoChannelName, videoThumb, videoId: id, generationId: archiveID }
+    const VideoInfos = { languages:"", videoLenghtSeconds, videoLengthMinutes, videoLenghtFormatted, videoTitle, videoChannelName, videoThumb, videoId: id, generationId: archiveID }
 
     await prismadb.archives.create({
         data: {
